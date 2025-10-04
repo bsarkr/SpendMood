@@ -338,3 +338,11 @@ body {
     font-size: 2rem;
   }
 }
+
+.content{
+  display: flex;
+  width: 100vw;
+  justify-content: center;
+  align-items: center;
+  align-content: center;
+}

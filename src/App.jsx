@@ -29,10 +29,18 @@ function App() {
     }, 300);
   };
 
+  const handleViewCalendar = () => {
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setView('calendar');
+      setIsTransitioning(false);
+    }, 300);
+  };
+
   return (
     <div className={`app ${isTransitioning ? 'transitioning' : ''}`}>
       {view === 'input' ? (
-        <InputPage onSubmit={handleEntrySubmit} hasEntries={entries.length > 0} onViewCalendar={handleBackToInput} />
+        <InputPage onSubmit={handleEntrySubmit} hasEntries={entries.length > 0} onViewCalendar={handleViewCalendar} />
       ) : (
         <CalendarView entries={entries} onBack={handleBackToInput} />
       )}

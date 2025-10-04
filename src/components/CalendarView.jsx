@@ -25,52 +25,54 @@ function CalendarView({ entries, onBack }) {
     }, [weekEntries]);
 
     return (
-        <div className="calendar-view">
-            <button className="back-btn" onClick={onBack}>← New Entry</button>
+        <div className = "content">
+            <div className="calendar-view">
+                <button className="back-btn" onClick={onBack}>← New Entry</button>
 
-            <WeeklySummary entries={weekEntries} insight={weeklyInsight} />
+                <WeeklySummary entries={weekEntries} insight={weeklyInsight} />
 
-            <div className="calendar-grid">
-                <div className="week-navigation">
-                    <button onClick={() => setCurrentWeekStart(addDays(currentWeekStart, -7))}>
-                        ← Previous Week
-                    </button>
-                    <h2>{format(currentWeekStart, 'MMM d')} - {format(addDays(currentWeekStart, 6), 'MMM d, yyyy')}</h2>
-                    <button onClick={() => setCurrentWeekStart(addDays(currentWeekStart, 7))}>
-                        Next Week →
-                    </button>
-                </div>
+                <div className="calendar-grid">
+                    <div className="week-navigation">
+                        <button onClick={() => setCurrentWeekStart(addDays(currentWeekStart, -7))}>
+                            ← Previous Week
+                        </button>
+                        <h2>{format(currentWeekStart, 'MMM d')} - {format(addDays(currentWeekStart, 6), 'MMM d, yyyy')}</h2>
+                        <button onClick={() => setCurrentWeekStart(addDays(currentWeekStart, 7))}>
+                            Next Week →
+                        </button>
+                    </div>
 
-                <div className="days-grid">
-                    {weekDays.map(day => {
-                        const dayEntries = getEntriesForDay(day);
-                        const isToday = isSameDay(day, new Date());
+                    <div className="days-grid">
+                        {weekDays.map(day => {
+                            const dayEntries = getEntriesForDay(day);
+                            const isToday = isSameDay(day, new Date());
 
-                        return (
-                            <div key={day} className={`day-card ${isToday ? 'today' : ''}`}>
-                                <div className="day-header">
-                                    <div className="day-name">{format(day, 'EEE')}</div>
-                                    <div className="day-date">{format(day, 'd')}</div>
-                                </div>
+                            return (
+                                <div key={day} className={`day-card ${isToday ? 'today' : ''}`}>
+                                    <div className="day-header">
+                                        <div className="day-name">{format(day, 'EEE')}</div>
+                                        <div className="day-date">{format(day, 'd')}</div>
+                                    </div>
 
-                                <div className="day-entries">
-                                    {dayEntries.length === 0 ? (
-                                        <div className="no-entries">No entries</div>
-                                    ) : (
-                                        dayEntries.map((entry, idx) => (
-                                            <div key={idx} className="entry-item">
-                                                <div className={`mood-indicator mood-${entry.mood.toLowerCase()}`}>
-                                                    {entry.mood}
+                                    <div className="day-entries">
+                                        {dayEntries.length === 0 ? (
+                                            <div className="no-entries">No entries</div>
+                                        ) : (
+                                            dayEntries.map((entry, idx) => (
+                                                <div key={idx} className="entry-item">
+                                                    <div className={`mood-indicator mood-${entry.mood.toLowerCase()}`}>
+                                                        {entry.mood}
+                                                    </div>
+                                                    <div className="entry-time">{format(new Date(entry.timestamp), 'h:mm a')}</div>
+                                                    <div className="entry-purchase">${entry.amount} - {entry.item}</div>
                                                 </div>
-                                                <div className="entry-time">{format(new Date(entry.timestamp), 'h:mm a')}</div>
-                                                <div className="entry-purchase">${entry.amount} - {entry.item}</div>
-                                            </div>
-                                        ))
-                                    )}
+                                            ))
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        );
-                    })}
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
         </div>
