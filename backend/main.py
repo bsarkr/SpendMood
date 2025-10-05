@@ -1,7 +1,7 @@
-# backend/main.py
-
 import json
 import uuid
+import requests
+import os
 from datetime import datetime, timedelta, date
 from pathlib import Path
 from typing import TypedDict, List, Optional, Tuple
@@ -31,8 +31,14 @@ except Exception:
         sys.modules["analysis.gemini"] = gemini_mod
         spec.loader.exec_module(gemini_mod)
         analyze_entry_with_gemini = getattr(gemini_mod, "analyze_entry_with_gemini")
+from dotenv import load_dotenv
 
-# FIX 1: Define the missing Pydantic models directly in this file.
+# Load environment variables
+load_dotenv()
+NESSIE_API_KEY = os.getenv("SECRET_NESSIE")
+NESSIE_BASE_URL = "http://api.nessieisreal.com"
+
+# Pydantic models
 
 
 class ReviewPayload(BaseModel):
@@ -40,24 +46,21 @@ class ReviewPayload(BaseModel):
 
 
 class InterventionResponsePayload(BaseModel):
-    user_choice: str  # e.g., "accept_delay", "reject_suggestion"
+    user_choice: str
 
 
 class LogPayload(BaseModel):
     text: str
     amount: Optional[float] = None
-    timestamp: Optional[str] = None  # ISO datetime string, optional
+    timestamp: Optional[str] = None
 
 
-# ========= Mock Database & Demo State =========
-# File-backed mock DB (loads backend/mock_db.json if present)
+# Mock Database
 DB_PATH = Path(__file__).parent / "mock_db.json"
 
 
 def _deserialize_db(raw: dict) -> dict:
-    """Convert JSON-loaded DB into runtime-friendly objects (datetimes, date keys)."""
     db = raw.copy()
-    # Convert transaction timestamps to datetime
     txs = {}
     for k, v in db.get("transactions", {}).items():
         tx = v.copy()
@@ -70,7 +73,6 @@ def _deserialize_db(raw: dict) -> dict:
         txs[k] = tx
     db["transactions"] = txs
 
-    # Convert mood log keys (YYYY-MM-DD) to date objects
     mood_logs = {}
     for k, v in db.get("mood_logs", {}).items():
         try:
@@ -90,11 +92,9 @@ def _deserialize_db(raw: dict) -> dict:
 
 
 def _serialize_db(db: dict) -> dict:
-    """Prepare a JSON-serializable version of the in-memory DB (serialize datetimes and date keys)."""
     out = {}
     out["user"] = db.get("user", {})
 
-    # Transactions: serialize timestamps
     txs = {}
     for k, v in db.get("transactions", {}).items():
         tx = v.copy()
@@ -106,7 +106,6 @@ def _serialize_db(db: dict) -> dict:
         txs[k] = tx
     out["transactions"] = txs
 
-    # Mood logs: use ISO date strings as keys
     mood_logs = {}
     for k, v in db.get("mood_logs", {}).items():
         if isinstance(k, date):
@@ -129,7 +128,6 @@ def load_db() -> dict:
             print(
                 f"Failed to load mock DB ({DB_PATH}): {e}. Falling back to default.")
 
-    # fallback default
     return _deserialize_db({
         "user": {
             "id": "alex",
@@ -139,15 +137,8 @@ def load_db() -> dict:
             "memory": [],
             "avoided_spending": 0.0,
         },
-        "transactions": {
-            "tx_day1_1": {"id": "tx_day1_1", "merchant": "Groceries", "amount": 45.00, "timestamp": datetime(2025, 10, 4, 18, 0).isoformat(), "status": "reviewed"},
-            "tx_day1_2": {"id": "tx_day1_2", "merchant": "Coffee", "amount": 12.00, "timestamp": datetime(2025, 10, 4, 9, 0).isoformat(), "status": "reviewed"},
-            "tx_day2_1": {"id": "tx_day2_1", "merchant": "Amazon", "amount": 120.00, "timestamp": datetime(2025, 10, 5, 22, 0).isoformat(), "status": "pending_review"},
-        },
-        "mood_logs": {
-            datetime(2025, 10, 4).date().isoformat(): {"rating": 4, "note": "Good day"},
-            datetime(2025, 10, 5).date().isoformat(): {"rating": 2, "note": "Rough day at work"},
-        },
+        "transactions": {},
+        "mood_logs": {},
         "pending_interventions": {},
     })
 
@@ -162,10 +153,9 @@ def save_db(db: dict):
         print(f"Failed to save DB to {DB_PATH}: {e}")
 
 
-# Load DB at module import time
 db = load_db()
 
-# ========= LangGraph State and Tools =========
+# LangGraph State
 
 
 class GraphState(TypedDict):
@@ -174,11 +164,10 @@ class GraphState(TypedDict):
     context: dict
     analysis: dict
     intervention: dict
-    user_feedback: Optional[str] = None
+    user_feedback: Optional[str]
 
 
 def get_context_from_db(transaction_id: str, user_reason: str) -> dict:
-    """Tool to fetch all necessary data from the database."""
     print("--- TOOL: Fetching Context ---")
     tx = db["transactions"][transaction_id]
     mood_log = db["mood_logs"].get(tx["timestamp"].date())
@@ -192,18 +181,16 @@ def get_context_from_db(transaction_id: str, user_reason: str) -> dict:
 
 
 def update_memory_in_db(summary: str):
-    """Tool to update the user's long-term memory."""
     print(f"--- TOOL: Updating Memory with: '{summary}' ---")
     db["user"]["memory"].append(summary)
     if "success" in summary.lower():
         db["user"]["avoided_spending"] += 120.00
     save_db(db)
 
-# ========= LangGraph Nodes (Agent Jobs) =========
+# LangGraph Agents
 
 
 def triage_agent(state: GraphState) -> GraphState:
-    """Gathers context and performs a quick analysis."""
     print("--- NODE: Triage Agent ---")
     context = get_context_from_db(
         state["transaction_id"], state["user_reason"])
@@ -218,7 +205,6 @@ def triage_agent(state: GraphState) -> GraphState:
 
 
 def analysis_agent(state: GraphState) -> GraphState:
-    """Simulates an LLM call to analyze the emotional signature."""
     print("--- NODE: Analysis Agent ---")
     state["analysis"] = {
         "motivation": "Emotional (Stress)",
@@ -228,7 +214,6 @@ def analysis_agent(state: GraphState) -> GraphState:
 
 
 def intervention_agent(state: GraphState) -> GraphState:
-    """Simulates an LLM call to design the intervention."""
     print("--- NODE: Intervention Agent ---")
     message = (
         "Last time you were stressed, a walk helped. "
@@ -241,7 +226,6 @@ def intervention_agent(state: GraphState) -> GraphState:
 
 
 def memory_agent(state: GraphState) -> GraphState:
-    """Summarizes the event and updates the user's memory."""
     print("--- NODE: Memory Agent ---")
     feedback = state["user_feedback"]
     outcome = "Success" if feedback == "accepted" else "Dismissed"
@@ -251,7 +235,6 @@ def memory_agent(state: GraphState) -> GraphState:
 
 
 def should_analyze(state: GraphState) -> str:
-    """Router function to decide if deep analysis is needed."""
     print("--- ROUTER: Should Analyze? ---")
     if state["context"].get("requires_deep_analysis", False):
         print("DECISION: Yes, analyze deeply.")
@@ -272,11 +255,10 @@ def _detect_mood_from_text(text: str) -> Tuple[str, int]:
         return "happy", 5
     if any(w in t for w in ["okay", "fine", "meh", "so-so", "neutral"]):
         return "neutral", 3
-    # fallback: neutral
     return "neutral", 3
 
 
-# ========= LangGraph Graph Definition =========
+# LangGraph workflow
 workflow = StateGraph(GraphState)
 workflow.add_node("triage", triage_agent)
 workflow.add_node("analyze", analysis_agent)
@@ -289,7 +271,24 @@ workflow.add_edge("analyze", "intervene")
 workflow.add_edge("update_memory", END)
 app_graph = workflow.compile()
 
-# ========= FastAPI Application =========
+# Nessie API Integration
+
+
+def fetch_nessie_purchases(account_id: str) -> list:
+    url = f"{NESSIE_BASE_URL}/accounts/{account_id}/purchases?key={NESSIE_API_KEY}"
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            print(f"Nessie API error: {response.status_code}")
+            return []
+    except Exception as e:
+        print(f"Failed to fetch from Nessie: {e}")
+        return []
+
+
+# FastAPI Application
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -346,16 +345,73 @@ def log_entry(payload: LogPayload):
     return {"mood": {"label": analysis["mood_label"], "rating": analysis["mood_rating"]}, "transaction": created_tx}
 
 
+@app.post("/api/nessie/import/{account_id}")
+def import_nessie_purchases(account_id: str):
+    purchases = fetch_nessie_purchases(account_id)
+
+    if not purchases:
+        raise HTTPException(
+            status_code=404, detail="No purchases found or API error")
+
+    imported_count = 0
+    analyzed_count = 0
+
+    for purchase in purchases:
+        tx_id = f"nessie_{purchase['_id']}"
+
+        if tx_id in db["transactions"]:
+            continue
+
+        try:
+            purchase_date = datetime.fromisoformat(purchase['purchase_date'])
+        except:
+            purchase_date = datetime.now()
+
+        tx = {
+            "id": tx_id,
+            "merchant": purchase.get("description", "Unknown"),
+            "amount": purchase.get("amount", 0),
+            "timestamp": purchase_date,
+            "status": "pending_review",
+        }
+
+        db["transactions"][tx_id] = tx
+        imported_count += 1
+
+        try:
+            user_reason = f"Bought {purchase['description']} for ${purchase['amount']}"
+            inputs = {"transaction_id": tx_id, "user_reason": user_reason}
+            result = app_graph.invoke(inputs)
+
+            if "intervention" in result and result["intervention"]:
+                db["pending_interventions"][tx_id] = result["intervention"]
+                db["transactions"][tx_id]["status"] = "awaiting_feedback"
+                analyzed_count += 1
+            else:
+                db["transactions"][tx_id]["status"] = "reviewed"
+
+        except Exception as e:
+            print(f"Agent analysis failed for {tx_id}: {e}")
+            db["transactions"][tx_id]["status"] = "reviewed"
+
+    save_db(db)
+
+    return {
+        "status": "success",
+        "imported": imported_count,
+        "analyzed": analyzed_count,
+        "total_in_db": len(db["transactions"])
+    }
+
+
 @app.get("/api/calendar")
 def get_calendar_summary():
-    """Return a simple calendar-style aggregation: for each date, mood and total spending."""
     serial = _serialize_db(db)
     calendar = {}
     for date_str, mood in serial.get("mood_logs", {}).items():
         calendar[date_str] = {"mood": mood,
                               "spending": 0.0, "transactions": []}
     for tx in serial.get("transactions", {}).values():
-        # tx timestamp -> date
         try:
             d = tx.get("timestamp", "").split("T")[0]
         except Exception:
@@ -369,15 +425,11 @@ def get_calendar_summary():
 
 @app.post("/api/review/{transaction_id}")
 def review_transaction(transaction_id: str, payload: ReviewPayload):
-    """This endpoint triggers the main agentic workflow."""
     if transaction_id not in db["transactions"]:
         raise HTTPException(status_code=404, detail="Transaction not found")
     inputs = {"transaction_id": transaction_id,
               "user_reason": payload.user_reason}
-
-    # Run the graph (no external tracing)
     result = app_graph.invoke(inputs)
-
     if "intervention" in result and result["intervention"]:
         db["pending_interventions"][transaction_id] = result["intervention"]
         db["transactions"][transaction_id]["status"] = "awaiting_feedback"
@@ -388,7 +440,6 @@ def review_transaction(transaction_id: str, payload: ReviewPayload):
 
 @app.post("/api/intervention/{transaction_id}/respond")
 def respond_to_intervention(transaction_id: str, payload: InterventionResponsePayload):
-    """This endpoint is called after the user makes a choice."""
     if transaction_id not in db["pending_interventions"]:
         raise HTTPException(
             status_code=404, detail="Intervention not found or already handled.")
@@ -407,13 +458,11 @@ def respond_to_intervention(transaction_id: str, payload: InterventionResponsePa
 
 @app.get("/api/dashboard")
 def get_dashboard():
-    """Returns the final state of the user profile after interventions."""
     return db["user"]
 
 
 @app.get("/api/mockdb")
 def get_mockdb():
-    """Dev debug endpoint: return the JSON-serializable mock DB (what's written to mock_db.json)."""
     try:
         return _serialize_db(db)
     except Exception as e:

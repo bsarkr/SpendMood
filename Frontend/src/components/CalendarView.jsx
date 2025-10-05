@@ -41,79 +41,81 @@ function CalendarView({ entries, onBack, user, onLogout }) {
     };
 
     return (
-        <div className="calendar-view">
-            <div className="calendar-header">
-                <button className="back-btn" onClick={onBack}>← Log Your Spending</button>
-                <div className="user-info-calendar">
-                    <span className="user-name">
-                        {user?.username || user?.nickname || user?.given_name || user?.name?.split(' ')[0] || user?.email}
-                    </span>
-                    <button className="auth-btn logout-btn" onClick={onLogout}>
-                        Log Out
-                    </button>
-                </div>
-            </div>
-
-            <WeeklySummary entries={weekEntries} insight={weeklyInsight} />
-
-            <div className="calendar-grid">
-                <div className="week-navigation">
-                    <button onClick={() => setCurrentWeekStart(addDays(currentWeekStart, -7))}>
-                        ← Previous Week
-                    </button>
-                    <h2>{format(currentWeekStart, 'MMM d')} - {format(addDays(currentWeekStart, 6), 'MMM d, yyyy')}</h2>
-                    <button onClick={() => setCurrentWeekStart(addDays(currentWeekStart, 7))}>
-                        Next Week →
-                    </button>
+        <div className = 'content'>
+            <div className="calendar-view">
+                <div className="calendar-header">
+                    <button className="back-btn" onClick={onBack}>← Log Your Spending</button>
+                    <div className="user-info-calendar">
+                        <span className="user-name">
+                            {user?.username || user?.nickname || user?.given_name || user?.name?.split(' ')[0] || user?.email}
+                        </span>
+                        <button className="auth-btn logout-btn" onClick={onLogout}>
+                            Log Out
+                        </button>
+                    </div>
                 </div>
 
-                <div className="days-grid">
-                    {weekDays.map(day => {
-                        const dayEntries = getEntriesForDay(day);
-                        const isToday = isSameDay(day, new Date());
+                <WeeklySummary entries={weekEntries} insight={weeklyInsight} />
 
-                        return (
-                            <div key={day} className={`day-card ${isToday ? 'today' : ''}`}>
-                                <div className="day-header">
-                                    <div className="day-name">{format(day, 'EEE')}</div>
-                                    <div className="day-date">{format(day, 'd')}</div>
-                                </div>
+                <div className="calendar-grid">
+                    <div className="week-navigation">
+                        <button onClick={() => setCurrentWeekStart(addDays(currentWeekStart, -7))}>
+                            ← Previous Week
+                        </button>
+                        <h2>{format(currentWeekStart, 'MMM d')} - {format(addDays(currentWeekStart, 6), 'MMM d, yyyy')}</h2>
+                        <button onClick={() => setCurrentWeekStart(addDays(currentWeekStart, 7))}>
+                            Next Week →
+                        </button>
+                    </div>
 
-                                <div className="day-entries">
-                                    {dayEntries.length === 0 ? (
-                                        <div className="no-entries">
-                                            <div className="no-entries-icon">📝</div>
-                                            <div className="no-entries-text">No purchases logged</div>
-                                        </div>
-                                    ) : (
-                                        dayEntries.map((entry, idx) => (
-                                            <div
-                                                key={idx}
-                                                className="entry-item"
-                                                onClick={(e) => handleEntryClick(entry, e)}
-                                            >
-                                                <div className={`mood-indicator mood-${entry.mood.toLowerCase()}`}>
-                                                    {entry.mood}
-                                                </div>
-                                                <div className="entry-time">{format(new Date(entry.timestamp), 'h:mm a')}</div>
-                                                <div className="entry-purchase">${entry.amount} - {entry.item}</div>
+                    <div className="days-grid">
+                        {weekDays.map(day => {
+                            const dayEntries = getEntriesForDay(day);
+                            const isToday = isSameDay(day, new Date());
+
+                            return (
+                                <div key={day} className={`day-card ${isToday ? 'today' : ''}`}>
+                                    <div className="day-header">
+                                        <div className="day-name">{format(day, 'EEE')}</div>
+                                        <div className="day-date">{format(day, 'd')}</div>
+                                    </div>
+
+                                    <div className="day-entries">
+                                        {dayEntries.length === 0 ? (
+                                            <div className="no-entries">
+                                                <div className="no-entries-icon">📝</div>
+                                                <div className="no-entries-text">No purchases logged</div>
                                             </div>
-                                        ))
-                                    )}
+                                        ) : (
+                                            dayEntries.map((entry, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className="entry-item"
+                                                    onClick={(e) => handleEntryClick(entry, e)}
+                                                >
+                                                    <div className={`mood-indicator mood-${entry.mood.toLowerCase()}`}>
+                                                        {entry.mood}
+                                                    </div>
+                                                    <div className="entry-time">{format(new Date(entry.timestamp), 'h:mm a')}</div>
+                                                    <div className="entry-purchase">${entry.amount} - {entry.item}</div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        );
-                    })}
+                            );
+                        })}
+                    </div>
                 </div>
-            </div>
 
-            {selectedEntry && (
-                <PurchaseDetailModal
-                    entry={selectedEntry}
-                    onClose={() => setSelectedEntry(null)}
-                    position={clickPosition}
-                />
-            )}
+                {selectedEntry && (
+                    <PurchaseDetailModal
+                        entry={selectedEntry}
+                        onClose={() => setSelectedEntry(null)}
+                        position={clickPosition}
+                    />
+                )}
+            </div>
         </div>
     );
 }

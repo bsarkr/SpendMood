@@ -762,10 +762,55 @@ body {
   }
 }
 
-.content{
+.content {
   display: flex;
   width: 100vw;
   justify-content: center;
   align-items: center;
   align-content: center;
+}
+
+.nessie-sync {
+  margin: 1.5rem 0;
+}
+
+.sync-btn {
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sync-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.sync-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sync-result {
+  margin-top: 0.75rem;
+  padding: 1rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.sync-result.success {
+  background: #d4edda;
+  color: #155724;
+}
+
+.sync-result.error {
+  background: #f8d7da;
+  color: #721c24;
 }

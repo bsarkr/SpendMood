@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { parseEntry } from '../utils/langchain';
+import NessieSync from './NessieSync';
 
 function InputPage({ onSubmit, hasEntries, onViewCalendar, isAuthenticated, user, onLogin, onLogout, pendingInput, setPendingInput }) {
     const [input, setInput] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
 
-    // Auto-submit pending input after login
     useEffect(() => {
         if (pendingInput && isAuthenticated) {
             setInput(pendingInput);
@@ -33,7 +33,6 @@ function InputPage({ onSubmit, hasEntries, onViewCalendar, isAuthenticated, user
         if (!input.trim()) return;
 
         if (!isAuthenticated) {
-            // Will save input and redirect
             onSubmit(null, input);
             return;
         }
@@ -52,28 +51,38 @@ function InputPage({ onSubmit, hasEntries, onViewCalendar, isAuthenticated, user
         }
     };
 
-    return (
-        <div className="input-page">
-            <div className="auth-header">
-                {isAuthenticated ? (
-                    <div className="user-info">
-                        <span className="user-name">
-                            Welcome, {user?.username || user?.nickname || user?.given_name || user?.name?.split(' ')[0] || 'there'}
-                        </span>
-                        <button className="auth-btn logout-btn" onClick={onLogout}>
-                            Log Out
-                        </button>
-                    </div>
-                ) : (
-                    <button className="auth-btn login-btn" onClick={onLogin}>
-                        Log In
-                    </button>
-                )}
-            </div>
+    const handleNessieSync = (result) => {
+        alert(`Imported ${result.imported} transactions from Capital One! Check your calendar.`);
+    };
 
-            <div className="input-container">
-                <h1 className="app-title">Track Your Spending and Mood!</h1>
-                <p className="subtitle">Understanding the connection between how you feel and what you buy</p>
+    return (
+        <div className = 'content'> 
+            <div className="input-page">
+                <div className="auth-header">
+                    {isAuthenticated ? (
+                        <div className="user-info">
+                            <span className="user-name">
+                                Welcome, {user?.username || user?.nickname || user?.given_name || user?.name?.split(' ')[0] || 'there'}
+                            </span>
+                            <button className="auth-btn logout-btn" onClick={onLogout}>
+                                Log Out
+                            </button>
+                        </div>
+                    ) : (
+                        <button className="auth-btn login-btn" onClick={onLogin}>
+                            Log In
+                        </button>
+                    )}
+                </div>
+
+                <div className="input-container">
+                    <h1 className="app-title">Track Your Spending and Mood!</h1>
+                    <p className="subtitle">Understanding the connection between how you feel and what you buy</p>
+                </div>
+
+                {isAuthenticated && (
+                    <NessieSync onSyncComplete={handleNessieSync} />
+                )}
 
                 <form onSubmit={handleSubmit}>
                     <textarea
@@ -90,7 +99,9 @@ function InputPage({ onSubmit, hasEntries, onViewCalendar, isAuthenticated, user
                         className="submit-btn"
                         disabled={isProcessing || !input.trim()}
                     >
-                        {isProcessing ? 'Processing...' : (isAuthenticated ? 'Log Entry' : 'Log Entry (Login Required)')}
+                        {isProcessing
+                            ? 'Processing...'
+                            : (isAuthenticated ? 'Log Entry' : 'Log Entry (Login Required)')}
                     </button>
                 </form>
 
@@ -99,10 +110,11 @@ function InputPage({ onSubmit, hasEntries, onViewCalendar, isAuthenticated, user
                         View Calendar
                     </button>
                 )}
-            </div>
 
-            <div className="hint-text">
-                Example: "Feeling stressed after work. Bought a $45 shirt from H&M at 9pm to feel better."
+                <div className="hint-text">
+                    Example: "Feeling stressed after work. Bought a $45 shirt from H&M at 9pm to feel better."
+                </div>
+
             </div>
         </div>
     );

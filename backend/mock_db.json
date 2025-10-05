@@ -42,6 +42,62 @@
       "amount": 18.0,
       "timestamp": "2025-10-04T21:39:09.392036",
       "status": "pending_review"
+    },
+    "tx_55b5516b": {
+      "id": "tx_55b5516b",
+      "merchant": "manual-entry",
+      "amount": 17.0,
+      "timestamp": "2025-10-05T02:30:49.096000+00:00",
+      "status": "pending_review"
+    },
+    "nessie_68e1f0fa9683f20dd519a6b0": {
+      "id": "nessie_68e1f0fa9683f20dd519a6b0",
+      "merchant": "Shoes",
+      "amount": 56.85,
+      "timestamp": "2025-10-05T00:00:00",
+      "status": "reviewed"
+    },
+    "nessie_68e1f0fb9683f20dd519a6b1": {
+      "id": "nessie_68e1f0fb9683f20dd519a6b1",
+      "merchant": "Snack",
+      "amount": 88.87,
+      "timestamp": "2025-10-04T00:00:00",
+      "status": "reviewed"
+    },
+    "nessie_68e1f0fc9683f20dd519a6b2": {
+      "id": "nessie_68e1f0fc9683f20dd519a6b2",
+      "merchant": "Headphones",
+      "amount": 36.39,
+      "timestamp": "2025-10-03T00:00:00",
+      "status": "reviewed"
+    },
+    "nessie_68e1f0fe9683f20dd519a6b3": {
+      "id": "nessie_68e1f0fe9683f20dd519a6b3",
+      "merchant": "Book",
+      "amount": 85.61,
+      "timestamp": "2025-10-02T00:00:00",
+      "status": "reviewed"
+    },
+    "nessie_68e1f0ff9683f20dd519a6b4": {
+      "id": "nessie_68e1f0ff9683f20dd519a6b4",
+      "merchant": "Notebook",
+      "amount": 38.36,
+      "timestamp": "2025-10-01T00:00:00",
+      "status": "reviewed"
+    },
+    "nessie_68e1f1009683f20dd519a6b5": {
+      "id": "nessie_68e1f1009683f20dd519a6b5",
+      "merchant": "Coffee",
+      "amount": 68.95,
+      "timestamp": "2025-09-30T00:00:00",
+      "status": "reviewed"
+    },
+    "nessie_68e1f1019683f20dd519a6b6": {
+      "id": "nessie_68e1f1019683f20dd519a6b6",
+      "merchant": "Notebook",
+      "amount": 69.83,
+      "timestamp": "2025-09-29T00:00:00",
+      "status": "reviewed"
     }
   },
   "mood_logs": {
@@ -50,8 +106,8 @@
       "note": "Lunch with a friend"
     },
     "2025-10-05": {
-      "rating": 2,
-      "note": "Rough day at work"
+      "rating": 3,
+      "note": "Feeling stressed after work. Bought a $45 shirt from H&M at 9pm to feel better"
     }
   },
   "pending_interventions": {

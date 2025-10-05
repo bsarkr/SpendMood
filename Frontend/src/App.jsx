@@ -4,6 +4,8 @@ import InputPage from './components/InputPage';
 import CalendarView from './components/CalendarView';
 import './App.css';
 
+const API_BASE = 'http://localhost:8000/api';
+
 function App() {
   const { isAuthenticated, isLoading, loginWithRedirect, logout, user } = useAuth0();
   const [view, setView] = useState('input');
@@ -11,27 +13,34 @@ function App() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [pendingInput, setPendingInput] = useState('');
 
-  // Load user's entries when authenticated
+  // Load entries from backend when authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
-      const storageKey = `moodspend_entries_${user.sub}`;
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        setEntries(JSON.parse(saved));
-      }
-      // No dummy data - starts empty
+      fetchEntriesFromBackend();
     }
   }, [isAuthenticated, user]);
 
-  // Save entries whenever they change
-  useEffect(() => {
-    if (isAuthenticated && user && entries.length > 0) {
-      const storageKey = `moodspend_entries_${user.sub}`;
-      localStorage.setItem(storageKey, JSON.stringify(entries));
-    }
-  }, [entries, isAuthenticated, user]);
+  const fetchEntriesFromBackend = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/mockdb`);
+      const data = await response.json();
 
-  // Check for pending input after login
+      // Convert backend transactions to frontend format
+      const backendEntries = Object.values(data.transactions).map(tx => ({
+        timestamp: tx.timestamp,
+        mood: 'Neutral', // Default, could enhance this
+        amount: tx.amount,
+        item: tx.merchant,
+        reason: `Purchased from ${tx.merchant}`,
+        category: 'Shopping'
+      }));
+
+      setEntries(backendEntries);
+    } catch (error) {
+      console.error('Failed to fetch entries from backend:', error);
+    }
+  };
+
   useEffect(() => {
     const pending = sessionStorage.getItem('pending_entry');
     if (pending && isAuthenticated) {
@@ -42,7 +51,6 @@ function App() {
 
   const handleEntrySubmit = async (parsedData, inputText) => {
     if (!isAuthenticated) {
-      // Save input and redirect to login
       sessionStorage.setItem('pending_entry', inputText);
       loginWithRedirect();
       return;
@@ -69,6 +77,7 @@ function App() {
     if (!isAuthenticated) {
       loginWithRedirect();
     } else {
+      fetchEntriesFromBackend(); // Refresh before viewing
       setIsTransitioning(true);
       setTimeout(() => {
         setView('calendar');
