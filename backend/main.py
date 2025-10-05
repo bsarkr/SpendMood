@@ -1,5 +1,8 @@
-# backend/main.py
+from analysis.gemini import analyze_entry_with_gemini, analyze_patterns_with_gemini
+from pydantic import BaseModel
+from datetime import timedelta
 
+# backend/main.py
 import json
 import uuid
 import requests
@@ -34,14 +37,6 @@ from dotenv import load_dotenv
 load_dotenv()
 NESSIE_API_KEY = os.getenv("SECRET_NESSIE")
 NESSIE_BASE_URL = "http://api.nessieisreal.com"
-
-
-class ReviewPayload(BaseModel):
-    user_reason: str
-
-
-class InterventionResponsePayload(BaseModel):
-    user_choice: str
 
 
 class LogPayload(BaseModel):
@@ -80,8 +75,7 @@ def _deserialize_db(raw: dict) -> dict:
     db["mood_logs"] = mood_logs
 
     db.setdefault("user", {"id": "alex", "name": "Alex", "goal": "",
-                  "known_trigger": "", "memory": [], "avoided_spending": 0.0})
-    db.setdefault("pending_interventions", {})
+                  "known_trigger": ""})
     return db
 
 
@@ -109,7 +103,7 @@ def _serialize_db(db: dict) -> dict:
         mood_logs[key] = v
     out["mood_logs"] = mood_logs
 
-    out["pending_interventions"] = db.get("pending_interventions", {})
+
     return out
 
 
@@ -126,14 +120,11 @@ def load_db() -> dict:
         "user": {
             "id": "alex",
             "name": "Alex",
-            "goal": "Stop stress shopping and save $500/month",
-            "known_trigger": "Bad work days lead to online shopping",
-            "memory": [],
-            "avoided_spending": 0.0,
+            "goal": "Save $500/month",
+            "known_trigger": "",
         },
         "transactions": {},
         "mood_logs": {},
-        "pending_interventions": {},
     })
 
 
@@ -155,8 +146,6 @@ class GraphState(TypedDict):
     user_reason: str
     context: dict
     analysis: dict
-    intervention: dict
-    user_feedback: Optional[str]
 
 
 def get_context_from_db(transaction_id: str, user_reason: str) -> dict:
@@ -203,25 +192,7 @@ def analysis_agent(state: GraphState) -> GraphState:
     return state
 
 
-def intervention_agent(state: GraphState) -> GraphState:
-    print("--- NODE: Intervention Agent ---")
-    message = (
-        "Last time you were stressed, a walk helped. "
-        "This purchase is 40% of your weekly discretionary budget. "
-        "Want to sleep on it and decide tomorrow?"
-    )
-    state["intervention"] = {"message": message,
-                             "options": ["accept_delay", "reject_suggestion"]}
-    return state
 
-
-def memory_agent(state: GraphState) -> GraphState:
-    print("--- NODE: Memory Agent ---")
-    feedback = state["user_feedback"]
-    outcome = "Success" if feedback == "accepted" else "Dismissed"
-    summary = f"Intervention: '24-hour delay' for a $120 stress purchase. Outcome: {outcome}."
-    update_memory_in_db(summary)
-    return state
 
 
 def should_analyze(state: GraphState) -> str:
@@ -250,13 +221,10 @@ def _detect_mood_from_text(text: str) -> Tuple[str, int]:
 workflow = StateGraph(GraphState)
 workflow.add_node("triage", triage_agent)
 workflow.add_node("analyze", analysis_agent)
-workflow.add_node("intervene", intervention_agent)
-workflow.add_node("update_memory", memory_agent)
 workflow.set_entry_point("triage")
 workflow.add_conditional_edges("triage", should_analyze, {
                                "analyze": "analyze", "end": END})
-workflow.add_edge("analyze", "intervene")
-workflow.add_edge("update_memory", END)
+workflow.add_edge("analyze", END)
 app_graph = workflow.compile()
 
 
@@ -300,13 +268,13 @@ def log_entry(payload: LogPayload):
     created_tx = None
     if final_amount is not None and final_amount > 0:
         tx_id = f"tx_{uuid.uuid4().hex[:8]}"
-
+        
         tx = {
             "id": tx_id,
             "merchant": analysis.get("item") or "manual-entry",
             "amount": final_amount,
             "timestamp": ts,
-            "status": "pending_review",
+            "status": "reviewed",
             "user_reason": payload.text,
             "mood_label": analysis["mood_label"],
             "mood_rating": analysis["mood_rating"],
@@ -314,12 +282,6 @@ def log_entry(payload: LogPayload):
         db["transactions"][tx_id] = tx
         save_db(db)
         created_tx = tx
-
-        try:
-            inputs = {"transaction_id": tx_id, "user_reason": payload.text}
-            app_graph.invoke(inputs)
-        except Exception as e:
-            print(f"Workflow invoke failed for manual entry: {e}")
 
     return {"mood": {"label": analysis["mood_label"], "rating": analysis["mood_rating"]}, "transaction": created_tx}
 
@@ -362,20 +324,8 @@ def import_nessie_purchases(account_id: str):
         db["transactions"][tx_id] = tx
         imported_count += 1
 
-        try:
-            inputs = {"transaction_id": tx_id, "user_reason": user_reason}
-            result = app_graph.invoke(inputs)
-
-            if "intervention" in result and result["intervention"]:
-                db["pending_interventions"][tx_id] = result["intervention"]
-                db["transactions"][tx_id]["status"] = "awaiting_feedback"
-                analyzed_count += 1
-            else:
-                db["transactions"][tx_id]["status"] = "reviewed"
-
-        except Exception as e:
-            print(f"Agent analysis failed for {tx_id}: {e}")
-            db["transactions"][tx_id]["status"] = "reviewed"
+        tx["status"] = "reviewed"
+        analyzed_count += 1
 
     save_db(db)
 
@@ -407,36 +357,17 @@ def get_calendar_summary():
 
 
 @app.post("/api/review/{transaction_id}")
-def review_transaction(transaction_id: str, payload: ReviewPayload):
+def review_transaction(transaction_id: str):
     if transaction_id not in db["transactions"]:
         raise HTTPException(status_code=404, detail="Transaction not found")
-    inputs = {"transaction_id": transaction_id,
-              "user_reason": payload.user_reason}
-    result = app_graph.invoke(inputs)
-    if "intervention" in result and result["intervention"]:
-        db["pending_interventions"][transaction_id] = result["intervention"]
-        db["transactions"][transaction_id]["status"] = "awaiting_feedback"
-        save_db(db)
-        return {"status": "intervention_required", "data": result["intervention"]}
-    return {"status": "analysis_complete", "data": "No intervention needed."}
-
-
-@app.post("/api/intervention/{transaction_id}/respond")
-def respond_to_intervention(transaction_id: str, payload: InterventionResponsePayload):
-    if transaction_id not in db["pending_interventions"]:
-        raise HTTPException(
-            status_code=404, detail="Intervention not found or already handled.")
-    feedback = "accepted" if payload.user_choice == "accept_delay" else "rejected"
-    memory_graph = StateGraph(GraphState)
-    memory_graph.add_node("update_memory", memory_agent)
-    memory_graph.set_entry_point("update_memory")
-    memory_graph.add_edge("update_memory", END)
-    memory_app = memory_graph.compile()
-    memory_app.invoke({"user_feedback": feedback})
-    del db["pending_interventions"][transaction_id]
-    db["transactions"][transaction_id]["status"] = "reviewed"
+    
+    tx = db["transactions"][transaction_id]
+    tx["status"] = "reviewed"
     save_db(db)
-    return {"status": f"Feedback received: {feedback}"}
+    return {"status": "complete", "data": "Transaction reviewed."}
+
+
+
 
 
 @app.get("/api/dashboard")
@@ -451,3 +382,54 @@ def get_mockdb():
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Failed to serialize DB: {e}")
+
+# --- Pattern Summary Endpoint ---
+class PatternSummaryPayload(BaseModel):
+    user_id: str
+    date: str  # ISO format date string
+
+class PatternSummaryResponse(BaseModel):
+    patterns: list
+    summary: str
+
+def deduplicate_patterns(patterns: list) -> list:
+    seen = set()
+    unique = []
+    for p in patterns:
+        norm = p.lower().strip()
+        if norm not in seen:
+            seen.add(norm)
+            unique.append(p)
+    return unique
+
+@app.post("/api/patterns/summary", response_model=PatternSummaryResponse)
+def patterns_summary(payload: PatternSummaryPayload):
+    """
+    Analyzes previous 7 days of user data, calls Gemini for pattern analysis, deduplicates, and returns summary.
+    """
+    try:
+        target_date = datetime.fromisoformat(payload.date).date()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid date format")
+    # Get previous 7 days
+    days = [(target_date - timedelta(days=i)) for i in range(7)]
+    entries = []
+    for d in days:
+        mood_log = db["mood_logs"].get(d)
+        if mood_log:
+            entries.append(mood_log["note"])
+        # Also add purchase reasons for that day
+        for tx in db["transactions"].values():
+            tx_date = tx["timestamp"]
+            if isinstance(tx_date, str):
+                tx_date = datetime.fromisoformat(tx_date)
+            if tx_date.date() == d:
+                if tx.get("user_reason"):
+                    entries.append(tx["user_reason"])
+    if not entries:
+        return PatternSummaryResponse(patterns=[], summary="No data for previous 7 days.")
+    # Call Gemini for pattern analysis
+    gemini_result = analyze_patterns_with_gemini(entries)
+    patterns = deduplicate_patterns(gemini_result.get("patterns", []))
+    summary = gemini_result.get("summary", "")
+    return PatternSummaryResponse(patterns=patterns, summary=summary)
