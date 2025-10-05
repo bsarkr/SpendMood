@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { parseEntry } from '../utils/langchain';
+import NessieSync from './NessieSync';
 
 function InputPage({ onSubmit, hasEntries, onViewCalendar, isAuthenticated, user, onLogin, onLogout, pendingInput, setPendingInput }) {
     const [input, setInput] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
 
-    // Auto-submit pending input after login
     useEffect(() => {
         if (pendingInput && isAuthenticated) {
             setInput(pendingInput);
@@ -33,7 +33,6 @@ function InputPage({ onSubmit, hasEntries, onViewCalendar, isAuthenticated, user
         if (!input.trim()) return;
 
         if (!isAuthenticated) {
-            // Will save input and redirect
             onSubmit(null, input);
             return;
         }
@@ -50,6 +49,10 @@ function InputPage({ onSubmit, hasEntries, onViewCalendar, isAuthenticated, user
         } finally {
             setIsProcessing(false);
         }
+    };
+
+    const handleNessieSync = (result) => {
+        alert(`Imported ${result.imported} transactions from Capital One! Check your calendar.`);
     };
 
     return (
@@ -74,6 +77,10 @@ function InputPage({ onSubmit, hasEntries, onViewCalendar, isAuthenticated, user
             <div className="input-container">
                 <h1 className="app-title">Track Your Spending and Mood!</h1>
                 <p className="subtitle">Understanding the connection between how you feel and what you buy</p>
+
+                {isAuthenticated && (
+                    <NessieSync onSyncComplete={handleNessieSync} />
+                )}
 
                 <form onSubmit={handleSubmit}>
                     <textarea
