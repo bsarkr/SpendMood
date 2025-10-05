@@ -1,8 +1,12 @@
 # backend/models.py
+# By Chloe Velez, Yuki Li, Bilash Sarkar
+# 10-05-2025
+
 from pydantic import BaseModel, Field
 from typing import List, Optional, Literal
 from datetime import datetime
 import uuid
+
 
 class Transaction(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -16,9 +20,11 @@ class Transaction(BaseModel):
     unstructured_entry: Optional[str] = None
     analyzed_mood: Optional[str] = None
 
+
 class ReviewPayload(BaseModel):
     mood_rating: int
     user_reason: str
+
 
 class ManualEntryPayload(BaseModel):
     entry_text: str
@@ -26,6 +32,7 @@ class ManualEntryPayload(BaseModel):
 
 class InterventionResponsePayload(BaseModel):
     user_choice: Literal["accept_delay", "reject_suggestion"]
+
 
 class DashboardData(BaseModel):
     daily_summary_word: str

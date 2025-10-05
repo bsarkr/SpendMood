@@ -1,6 +1,9 @@
+# By Chloe Velez, Yuki Li, Bilash Sarkar
+# 10-05-2025
+
 import requests
 import json
-import os 
+import os
 import random
 import time
 from datetime import datetime, timedelta
@@ -9,25 +12,28 @@ from dotenv import load_dotenv
 load_dotenv()
 api_key = os.getenv("SECRET_NESSIE")
 
+
 def account(customer_id):
-    url = 'http://api.nessieisreal.com/customers/{}/accounts?key={}'.format(customer_id,api_key)
+    url = 'http://api.nessieisreal.com/customers/{}/accounts?key={}'.format(
+        customer_id, api_key)
     payload = {
         "type": "Savings",
         "nickname": "test",
         "rewards": 10000,
-        "balance": 10000,	
+        "balance": 10000,
     }
 
-    response = requests.post( 
-        url, 
+    response = requests.post(
+        url,
         data=json.dumps(payload),
-        headers={'content-type':'application/json'},
+        headers={'content-type': 'application/json'},
     )
     print(response.json())
     if response.status_code == 201:
         print('Account created')
 
     return response.json()['objectCreated']['_id']
+
 
 def create_cust():
     url = 'http://api.nessieisreal.com/customers?key={}'.format(api_key)
@@ -44,10 +50,10 @@ def create_cust():
         }
     }
 
-    response = requests.post( 
-        url, 
+    response = requests.post(
+        url,
         data=json.dumps(payload),
-        headers={'content-type':'application/json'},
+        headers={'content-type': 'application/json'},
     )
 
     print(response.json())
@@ -55,6 +61,7 @@ def create_cust():
         print('Customer created')
 
     return response.json()['objectCreated']['_id']
+
 
 def create_merch():
     url = 'http://api.nessieisreal.com/merchants?key={}'.format(api_key)
@@ -76,11 +83,13 @@ def create_merch():
     }
 
     return url, payload
-    #68e1bf829683f20dd519a4ee
+    # 68e1bf829683f20dd519a4ee
+
 
 def create_purch(account_id):
     merchant_id = "68e1bf829683f20dd519a4ee"  # Fixed for now
-    products = ["T-shirt", "Coffee", "Book", "Shoes", "Headphones", "Snack", "Notebook"]
+    products = ["T-shirt", "Coffee", "Book",
+                "Shoes", "Headphones", "Snack", "Notebook"]
 
     today = datetime.now()
 
@@ -106,20 +115,26 @@ def create_purch(account_id):
         )
 
         if response.status_code == 201:
-            print(f"✅ Purchase on {purchase_date} (${amount}) for '{description}'")
+            print(
+                f"✅ Purchase on {purchase_date} (${amount}) for '{description}'")
         else:
-            print(f"❌ Failed to create purchase on {purchase_date}:", response.text)
+            print(
+                f"❌ Failed to create purchase on {purchase_date}:", response.text)
 
         time.sleep(1)
+
 
 def test_data():
     cust_id = create_cust()
     account_id = account(cust_id)
     create_purch(account_id)
 
+
 def get_purch():
-    url = 'http://api.nessieisreal.com/accounts/68e1d7319683f20dd519a61a/purchases?key={}'.format(api_key)
+    url = 'http://api.nessieisreal.com/accounts/68e1d7319683f20dd519a61a/purchases?key={}'.format(
+        api_key)
     response = requests.get(url)
     print(response.json())
+
 
 get_purch()

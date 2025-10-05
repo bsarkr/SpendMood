@@ -1,6 +1,9 @@
+# By Chloe Velez, Yuki Li, Bilash Sarkar
+# 10-05-2025
+
 import requests
 import json
-import os 
+import os
 import random
 import time
 from datetime import datetime, timedelta
@@ -10,6 +13,7 @@ import nessie
 
 load_dotenv()
 api_key = os.getenv("SECRET_NESSIE")
+
 
 def create_cust():
     url = 'http://api.nessieisreal.com/customers?key={}'.format(api_key)
@@ -26,10 +30,10 @@ def create_cust():
         }
     }
 
-    response = requests.post( 
-        url, 
+    response = requests.post(
+        url,
         data=json.dumps(payload),
-        headers={'content-type':'application/json'},
+        headers={'content-type': 'application/json'},
     )
 
     print(response.json())
@@ -38,14 +42,16 @@ def create_cust():
 
     return response.json()['objectCreated']['_id']
 
+
 def create_purch(account_id):
     merchant_id = "68e1bf829683f20dd519a4ee"  # Fixed for now
-    products = ["T-shirt", "Coffee", "Book", "Shoes", "Headphones", "Snack", "Notebook"]
+    products = ["T-shirt", "Coffee", "Book",
+                "Shoes", "Headphones", "Snack", "Notebook"]
 
     today = datetime.now()
 
     for i in range(30):
-        if(random.randint(1,10) < 45):
+        if (random.randint(1, 10) < 45):
             purchase_date = (today - timedelta(days=i)).strftime('%Y-%m-%d')
             amount = round(random.uniform(5, 50), 2)
             description = random.choice(products)
@@ -67,15 +73,19 @@ def create_purch(account_id):
             )
 
             if response.status_code == 201:
-                print(f"✅ Purchase on {purchase_date} (${amount}) for '{description}'")
+                print(
+                    f"✅ Purchase on {purchase_date} (${amount}) for '{description}'")
             else:
-                print(f"❌ Failed to create purchase on {purchase_date}:", response.text)
+                print(
+                    f"❌ Failed to create purchase on {purchase_date}:", response.text)
 
             time.sleep(1)
+
 
 def test_data():
     cust_id = create_cust()
     account_id = nessie.account(cust_id)
     create_purch(account_id)
+
 
 test_data()

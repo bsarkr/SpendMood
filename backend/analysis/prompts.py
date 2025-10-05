@@ -1,3 +1,6 @@
+# By Chloe Velez, Yuki Li, Bilash Sarkar
+# 10-05-2025
+
 PATTERN_ANALYSIS_PROMPT = """
 You are an expert behavioral analyst for a personal finance app.
 Given a list of user mood logs and purchase reasons from the past 7 days, identify unique behavioral patterns.

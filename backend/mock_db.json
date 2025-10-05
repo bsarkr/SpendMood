@@ -117,13 +117,32 @@
       "user_reason": "I'm angry that I was charged $15 for a bagel",
       "mood_label": "angry",
       "mood_rating": 1
+    },
+    "tx_b0f4453f": {
+      "id": "tx_b0f4453f",
+      "merchant": "manual-entry",
+      "amount": 150.0,
+      "timestamp": "2025-10-05T13:32:29.008000+00:00",
+      "status": "reviewed",
+      "user_reason": "I'm sad I bought cookie for $150",
+      "mood_label": "sad",
+      "mood_rating": 1
+    },
+    "tx_12a2969f": {
+      "id": "tx_12a2969f",
+      "merchant": "manual-entry",
+      "amount": 10.0,
+      "timestamp": "2025-10-05T13:39:21.343000+00:00",
+      "status": "reviewed",
+      "user_reason": "I'm sad I bought a croc for $10",
+      "mood_label": "sad",
+      "mood_rating": 1
     }
   },
   "mood_logs": {
     "2025-10-05": {
       "rating": 1,
-      "note": "I'm angry that I was charged $15 for a bagel"
+      "note": "I'm sad I bought a croc for $10"
     }
-  },
-  "pending_interventions": {}
+  }
 }

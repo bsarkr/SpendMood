@@ -1,4 +1,6 @@
 # backend/analysis/gemini.py
+# By Chloe Velez, Yuki Li, Bilash Sarkar
+# 10-05-2025
 
 import json
 import os
@@ -13,7 +15,7 @@ try:
     api_key = os.getenv("GEMINI_API_KEY")
     if api_key:
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-2.5-flash-lite')
+        model = genai.GenerativeModel('gemini-2.0-flash-exp')
         print("Google Gemini client configured successfully.")
     else:
         model = None
@@ -77,7 +79,8 @@ def analyze_patterns_with_gemini(entries: list) -> dict:
     try:
         result = json.loads(response_text)
         # Ensure patterns are unique
-        patterns = list({p.lower().strip(): p for p in result.get("patterns", [])}.values())
+        patterns = list(
+            {p.lower().strip(): p for p in result.get("patterns", [])}.values())
         result["patterns"] = patterns
         return result
     except Exception as e:
@@ -101,20 +104,23 @@ def analyze_spending_with_gemini(purchase_details: Dict[str, Any]) -> dict:
         }
 
     try:
-        prompt = SPENDING_EVALUATION_PROMPT.format(purchase=json.dumps(purchase_details))
+        prompt = SPENDING_EVALUATION_PROMPT.format(
+            purchase=json.dumps(purchase_details))
         response = model.generate_content(prompt)
         response_text = response.text.strip().replace("```json", "").replace("```", "")
         print(f"--- Gemini spending analysis: {response_text} ---")
-        
+
         analysis = json.loads(response_text)
-        
+
         # Validate required fields
-        required_keys = ["is_extreme", "confidence", "reasons", "risk_factors", "recommendation"]
+        required_keys = ["is_extreme", "confidence",
+                         "reasons", "risk_factors", "recommendation"]
         if not all(key in analysis for key in required_keys):
-            raise ValueError("Gemini response missing required keys for spending analysis.")
-            
+            raise ValueError(
+                "Gemini response missing required keys for spending analysis.")
+
         return analysis
-        
+
     except Exception as e:
         print(f"ERROR: Gemini spending analysis failed: {e}")
         return {

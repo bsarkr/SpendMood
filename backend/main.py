@@ -1,3 +1,6 @@
+# By Chloe Velez, Yuki Li, Bilash Sarkar
+# 10-05-2025
+
 from analysis.gemini import analyze_entry_with_gemini, analyze_patterns_with_gemini
 from pydantic import BaseModel
 from datetime import timedelta
@@ -103,7 +106,6 @@ def _serialize_db(db: dict) -> dict:
         mood_logs[key] = v
     out["mood_logs"] = mood_logs
 
-
     return out
 
 
@@ -192,9 +194,6 @@ def analysis_agent(state: GraphState) -> GraphState:
     return state
 
 
-
-
-
 def should_analyze(state: GraphState) -> str:
     print("--- ROUTER: Should Analyze? ---")
     if state["context"].get("requires_deep_analysis", False):
@@ -268,7 +267,7 @@ def log_entry(payload: LogPayload):
     created_tx = None
     if final_amount is not None and final_amount > 0:
         tx_id = f"tx_{uuid.uuid4().hex[:8]}"
-        
+
         tx = {
             "id": tx_id,
             "merchant": analysis.get("item") or "manual-entry",
@@ -360,14 +359,11 @@ def get_calendar_summary():
 def review_transaction(transaction_id: str):
     if transaction_id not in db["transactions"]:
         raise HTTPException(status_code=404, detail="Transaction not found")
-    
+
     tx = db["transactions"][transaction_id]
     tx["status"] = "reviewed"
     save_db(db)
     return {"status": "complete", "data": "Transaction reviewed."}
-
-
-
 
 
 @app.get("/api/dashboard")
@@ -384,13 +380,17 @@ def get_mockdb():
             status_code=500, detail=f"Failed to serialize DB: {e}")
 
 # --- Pattern Summary Endpoint ---
+
+
 class PatternSummaryPayload(BaseModel):
     user_id: str
     date: str  # ISO format date string
 
+
 class PatternSummaryResponse(BaseModel):
     patterns: list
     summary: str
+
 
 def deduplicate_patterns(patterns: list) -> list:
     seen = set()
@@ -401,6 +401,7 @@ def deduplicate_patterns(patterns: list) -> list:
             seen.add(norm)
             unique.append(p)
     return unique
+
 
 @app.post("/api/patterns/summary", response_model=PatternSummaryResponse)
 def patterns_summary(payload: PatternSummaryPayload):
