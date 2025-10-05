@@ -21,8 +21,8 @@ def create_cust():
     url = 'http://api.nessieisreal.com/customers?key={}'.format(api_key)
 
     payload = {
-        "first_name": "John",
-        "last_name": "Doe",
+        "first_name": "Thomas",
+        "last_name": "Paine",
         "address": {
             "street_number": "2960",
             "street_name": "Broadway",
@@ -32,7 +32,15 @@ def create_cust():
         }
     }
 
-    return url, payload
+    response = requests.post( 
+        url, 
+        data=json.dumps(payload),
+        headers={'content-type':'application/json'},
+    )
+    
+    print(response.json())
+    if response.status_code == 201:
+        print('Customer created')
 
 def create_merch():
     url = 'http://api.nessieisreal.com/merchants?key={}'.format(api_key)
@@ -69,7 +77,9 @@ def create_purch(account_id):
     }
 
     return url, payload
-      
+
+
+"""     
 url, payload = create_purch('68e1b1699683f20dd519a46b')
 
 response = requests.post( 
@@ -83,7 +93,6 @@ print(response.json())
 if response.status_code == 201:
 	print('Post worked')
      
-"""
 
 def view_cust(customer_id):
     url = 'http://api.nessieisreal.com/customers/{}?key={}'.format(customer_id, api_key)
@@ -103,3 +112,6 @@ print(response.json())
 if response.status_code == 200:
     print('Post worked')
 """
+repsonse = create_cust()
+data = repsonse.json()
+print(data['objectCreated']['_id'])
