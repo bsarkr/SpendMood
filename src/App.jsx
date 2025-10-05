@@ -1,20 +1,56 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth0 } from '@auth0/auth0-react';
 import InputPage from './components/InputPage';
 import CalendarView from './components/CalendarView';
 import './App.css';
 
 function App() {
-  const [view, setView] = useState('input'); // 'input' or 'calendar'
+  const { isAuthenticated, isLoading, loginWithRedirect, logout, user } = useAuth0();
+  const [view, setView] = useState('input');
   const [entries, setEntries] = useState([]);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [pendingInput, setPendingInput] = useState('');
 
-  const handleEntrySubmit = async (parsedData) => {
+  // Load user's entries when authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const storageKey = `moodspend_entries_${user.sub}`;
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        setEntries(JSON.parse(saved));
+      }
+      // No dummy data - starts empty
+    }
+  }, [isAuthenticated, user]);
+
+  // Save entries whenever they change
+  useEffect(() => {
+    if (isAuthenticated && user && entries.length > 0) {
+      const storageKey = `moodspend_entries_${user.sub}`;
+      localStorage.setItem(storageKey, JSON.stringify(entries));
+    }
+  }, [entries, isAuthenticated, user]);
+
+  // Check for pending input after login
+  useEffect(() => {
+    const pending = sessionStorage.getItem('pending_entry');
+    if (pending && isAuthenticated) {
+      setPendingInput(pending);
+      sessionStorage.removeItem('pending_entry');
+    }
+  }, [isAuthenticated]);
+
+  const handleEntrySubmit = async (parsedData, inputText) => {
+    if (!isAuthenticated) {
+      // Save input and redirect to login
+      sessionStorage.setItem('pending_entry', inputText);
+      loginWithRedirect();
+      return;
+    }
+
     setIsTransitioning(true);
-
-    // Add new entry
     setEntries(prev => [...prev, parsedData]);
 
-    // Smooth transition after 300ms
     setTimeout(() => {
       setView('calendar');
       setIsTransitioning(false);
@@ -29,15 +65,41 @@ function App() {
     }, 300);
   };
 
+  if (isLoading) {
+    return <div className="loading">Loading...</div>;
+  }
+
   return (
     <div className={`app ${isTransitioning ? 'transitioning' : ''}`}>
       {view === 'input' ? (
-        <InputPage onSubmit={handleEntrySubmit} hasEntries={entries.length > 0} onViewCalendar={handleBackToInput} />
+        <InputPage
+          onSubmit={handleEntrySubmit}
+          hasEntries={entries.length > 0}
+          onViewCalendar={() => {
+            if (!isAuthenticated) {
+              loginWithRedirect();
+            } else {
+              setView('calendar');
+            }
+          }}
+          isAuthenticated={isAuthenticated}
+          user={user}
+          onLogin={loginWithRedirect}
+          onLogout={() => logout({ logoutParams: { returnTo: window.location.origin } })}
+          pendingInput={pendingInput}
+          setPendingInput={setPendingInput}
+        />
       ) : (
-        <CalendarView entries={entries} onBack={handleBackToInput} />
+        <CalendarView
+          entries={entries}
+          onBack={handleBackToInput}
+          user={user}
+          onLogout={() => logout({ logoutParams: { returnTo: window.location.origin } })}
+        />
       )}
     </div>
   );
 }
 
 export default App;
+

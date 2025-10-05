@@ -1,10 +1,13 @@
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { useState, useEffect } from 'react';
 import WeeklySummary from './WeeklySummary';
+import PurchaseDetailModal from './PurchaseDetailModal';
 
-function CalendarView({ entries, onBack }) {
+function CalendarView({ entries, onBack, user, onLogout }) {
     const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date()));
     const [weeklyInsight, setWeeklyInsight] = useState('');
+    const [selectedEntry, setSelectedEntry] = useState(null);
+    const [clickPosition, setClickPosition] = useState({ x: 0, y: 0 });
 
     const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
 
@@ -18,15 +21,27 @@ function CalendarView({ entries, onBack }) {
     });
 
     useEffect(() => {
-        // Generate weekly insight using LangGraph
         if (weekEntries.length > 0) {
             generateWeeklyInsight(weekEntries).then(setWeeklyInsight);
         }
     }, [weekEntries]);
 
+    const handleEntryClick = (entry, event) => {
+        setClickPosition({ x: event.clientX, y: event.clientY });
+        setSelectedEntry(entry);
+    };
+
     return (
         <div className="calendar-view">
-            <button className="back-btn" onClick={onBack}>← New Entry</button>
+            <div className="calendar-header">
+                <button className="back-btn" onClick={onBack}>← Log Your Spending</button>
+                <div className="user-info-calendar">
+                    <span className="user-name">{user?.given_name || user?.name || user?.email}</span>
+                    <button className="auth-btn logout-btn" onClick={onLogout}>
+                        Log Out
+                    </button>
+                </div>
+            </div>
 
             <WeeklySummary entries={weekEntries} insight={weeklyInsight} />
 
@@ -55,10 +70,17 @@ function CalendarView({ entries, onBack }) {
 
                                 <div className="day-entries">
                                     {dayEntries.length === 0 ? (
-                                        <div className="no-entries">No entries</div>
+                                        <div className="no-entries">
+                                            <div className="no-entries-icon">📝</div>
+                                            <div className="no-entries-text">No purchases logged</div>
+                                        </div>
                                     ) : (
                                         dayEntries.map((entry, idx) => (
-                                            <div key={idx} className="entry-item">
+                                            <div
+                                                key={idx}
+                                                className="entry-item"
+                                                onClick={(e) => handleEntryClick(entry, e)}
+                                            >
                                                 <div className={`mood-indicator mood-${entry.mood.toLowerCase()}`}>
                                                     {entry.mood}
                                                 </div>
@@ -73,13 +95,19 @@ function CalendarView({ entries, onBack }) {
                     })}
                 </div>
             </div>
+
+            {selectedEntry && (
+                <PurchaseDetailModal
+                    entry={selectedEntry}
+                    onClose={() => setSelectedEntry(null)}
+                    position={clickPosition}
+                />
+            )}
         </div>
     );
 }
 
 async function generateWeeklyInsight(entries) {
-    // This will call your LangGraph agent
-    // For now, placeholder
     const totalSpent = entries.reduce((sum, e) => sum + e.amount, 0);
     const avgMood = entries.length > 0 ? 'mixed' : 'neutral';
     return `You spent $${totalSpent.toFixed(2)} this week. Your mood was ${avgMood}.`;
