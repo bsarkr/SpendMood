@@ -1,3 +1,5 @@
+# backend/main.py
+
 import json
 import uuid
 from datetime import datetime, timedelta, date
@@ -10,8 +12,11 @@ from pydantic import BaseModel
 from langgraph.graph import StateGraph, END
 
 # FIX 1: Define the missing Pydantic models directly in this file.
+
+
 class ReviewPayload(BaseModel):
     user_reason: str
+
 
 class InterventionResponsePayload(BaseModel):
     user_choice: str  # e.g., "accept_delay", "reject_suggestion"
@@ -21,6 +26,7 @@ class LogPayload(BaseModel):
     text: str
     amount: Optional[float] = None
     timestamp: Optional[str] = None  # ISO datetime string, optional
+
 
 # ========= Mock Database & Demo State =========
 # File-backed mock DB (loads backend/mock_db.json if present)
@@ -56,7 +62,8 @@ def _deserialize_db(raw: dict) -> dict:
         mood_logs[d] = v
     db["mood_logs"] = mood_logs
 
-    db.setdefault("user", {"id": "alex", "name": "Alex", "goal": "", "known_trigger": "", "memory": [], "avoided_spending": 0.0})
+    db.setdefault("user", {"id": "alex", "name": "Alex", "goal": "",
+                  "known_trigger": "", "memory": [], "avoided_spending": 0.0})
     db.setdefault("pending_interventions", {})
     return db
 
@@ -98,7 +105,8 @@ def load_db() -> dict:
             raw = json.loads(DB_PATH.read_text())
             return _deserialize_db(raw)
         except Exception as e:
-            print(f"Failed to load mock DB ({DB_PATH}): {e}. Falling back to default.")
+            print(
+                f"Failed to load mock DB ({DB_PATH}): {e}. Falling back to default.")
 
     # fallback default
     return _deserialize_db({
@@ -137,6 +145,8 @@ def save_db(db: dict):
 db = load_db()
 
 # ========= LangGraph State and Tools =========
+
+
 class GraphState(TypedDict):
     transaction_id: str
     user_reason: str
@@ -144,6 +154,7 @@ class GraphState(TypedDict):
     analysis: dict
     intervention: dict
     user_feedback: Optional[str] = None
+
 
 def get_context_from_db(transaction_id: str, user_reason: str) -> dict:
     """Tool to fetch all necessary data from the database."""
@@ -158,6 +169,7 @@ def get_context_from_db(transaction_id: str, user_reason: str) -> dict:
         "user_reason": user_reason,
     }
 
+
 def update_memory_in_db(summary: str):
     """Tool to update the user's long-term memory."""
     print(f"--- TOOL: Updating Memory with: '{summary}' ---")
@@ -167,10 +179,13 @@ def update_memory_in_db(summary: str):
     save_db(db)
 
 # ========= LangGraph Nodes (Agent Jobs) =========
+
+
 def triage_agent(state: GraphState) -> GraphState:
     """Gathers context and performs a quick analysis."""
     print("--- NODE: Triage Agent ---")
-    context = get_context_from_db(state["transaction_id"], state["user_reason"])
+    context = get_context_from_db(
+        state["transaction_id"], state["user_reason"])
     state["context"] = context
     tx = context["transaction"]
     mood = context["mood_log"]
@@ -179,6 +194,7 @@ def triage_agent(state: GraphState) -> GraphState:
     else:
         state["context"]["requires_deep_analysis"] = False
     return state
+
 
 def analysis_agent(state: GraphState) -> GraphState:
     """Simulates an LLM call to analyze the emotional signature."""
@@ -189,6 +205,7 @@ def analysis_agent(state: GraphState) -> GraphState:
     }
     return state
 
+
 def intervention_agent(state: GraphState) -> GraphState:
     """Simulates an LLM call to design the intervention."""
     print("--- NODE: Intervention Agent ---")
@@ -197,8 +214,10 @@ def intervention_agent(state: GraphState) -> GraphState:
         "This purchase is 40% of your weekly discretionary budget. "
         "Want to sleep on it and decide tomorrow?"
     )
-    state["intervention"] = {"message": message, "options": ["accept_delay", "reject_suggestion"]}
+    state["intervention"] = {"message": message,
+                             "options": ["accept_delay", "reject_suggestion"]}
     return state
+
 
 def memory_agent(state: GraphState) -> GraphState:
     """Summarizes the event and updates the user's memory."""
@@ -208,6 +227,7 @@ def memory_agent(state: GraphState) -> GraphState:
     summary = f"Intervention: '24-hour delay' for a $120 stress purchase. Outcome: {outcome}."
     update_memory_in_db(summary)
     return state
+
 
 def should_analyze(state: GraphState) -> str:
     """Router function to decide if deep analysis is needed."""
@@ -242,7 +262,8 @@ workflow.add_node("analyze", analysis_agent)
 workflow.add_node("intervene", intervention_agent)
 workflow.add_node("update_memory", memory_agent)
 workflow.set_entry_point("triage")
-workflow.add_conditional_edges("triage", should_analyze, {"analyze": "analyze", "end": END})
+workflow.add_conditional_edges("triage", should_analyze, {
+                               "analyze": "analyze", "end": END})
 workflow.add_edge("analyze", "intervene")
 workflow.add_edge("update_memory", END)
 app_graph = workflow.compile()
@@ -251,7 +272,7 @@ app_graph = workflow.compile()
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "http://localhost:5173"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -312,7 +333,8 @@ def get_calendar_summary():
     serial = _serialize_db(db)
     calendar = {}
     for date_str, mood in serial.get("mood_logs", {}).items():
-        calendar[date_str] = {"mood": mood, "spending": 0.0, "transactions": []}
+        calendar[date_str] = {"mood": mood,
+                              "spending": 0.0, "transactions": []}
     for tx in serial.get("transactions", {}).values():
         # tx timestamp -> date
         try:
@@ -325,13 +347,15 @@ def get_calendar_summary():
         calendar[d]["transactions"].append(tx)
     return calendar
 
+
 @app.post("/api/review/{transaction_id}")
 def review_transaction(transaction_id: str, payload: ReviewPayload):
     """This endpoint triggers the main agentic workflow."""
     if transaction_id not in db["transactions"]:
         raise HTTPException(status_code=404, detail="Transaction not found")
-    inputs = {"transaction_id": transaction_id, "user_reason": payload.user_reason}
-    
+    inputs = {"transaction_id": transaction_id,
+              "user_reason": payload.user_reason}
+
     # Run the graph (no external tracing)
     result = app_graph.invoke(inputs)
 
@@ -342,11 +366,13 @@ def review_transaction(transaction_id: str, payload: ReviewPayload):
         return {"status": "intervention_required", "data": result["intervention"]}
     return {"status": "analysis_complete", "data": "No intervention needed."}
 
+
 @app.post("/api/intervention/{transaction_id}/respond")
 def respond_to_intervention(transaction_id: str, payload: InterventionResponsePayload):
     """This endpoint is called after the user makes a choice."""
     if transaction_id not in db["pending_interventions"]:
-        raise HTTPException(status_code=404, detail="Intervention not found or already handled.")
+        raise HTTPException(
+            status_code=404, detail="Intervention not found or already handled.")
     feedback = "accepted" if payload.user_choice == "accept_delay" else "rejected"
     memory_graph = StateGraph(GraphState)
     memory_graph.add_node("update_memory", memory_agent)
@@ -358,6 +384,7 @@ def respond_to_intervention(transaction_id: str, payload: InterventionResponsePa
     db["transactions"][transaction_id]["status"] = "reviewed"
     save_db(db)
     return {"status": f"Feedback received: {feedback}"}
+
 
 @app.get("/api/dashboard")
 def get_dashboard():
@@ -371,4 +398,5 @@ def get_mockdb():
     try:
         return _serialize_db(db)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to serialize DB: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to serialize DB: {e}")
