@@ -28,6 +28,7 @@ body {
   justify-content: center;
   min-height: 100vh;
   padding: 2rem;
+  padding-top: 6rem;
 }
 
 .input-container {
@@ -117,6 +118,14 @@ body {
   color: rgba(255, 255, 255, 0.9);
   text-align: center;
   font-size: 0.9rem;
+}
+
+.input-page form{
+  width: 100%;
+}
+
+.input-page textarea{
+  height: 300px;
 }
 
 /* CALENDAR VIEW */
@@ -772,6 +781,7 @@ body {
 
 .nessie-sync {
   margin: 1.5rem 0;
+  width: 100%;
 }
 
 .sync-btn {
