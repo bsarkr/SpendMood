@@ -86,7 +86,7 @@ def create_purch(account_id):
 
     for i in range(7):  # Past 7 days
         purchase_date = (today - timedelta(days=i)).strftime('%Y-%m-%d')
-        amount = round(random.uniform(5, 100), 2)
+        amount = round(random.uniform(5, 50), 2)
         description = random.choice(products)
 
         url = f'http://api.nessieisreal.com/accounts/{account_id}/purchases?key={api_key}'
@@ -117,4 +117,9 @@ def test_data():
     account_id = account(cust_id)
     create_purch(account_id)
 
-test_data()
+def get_purch():
+    url = 'http://api.nessieisreal.com/accounts/68e1d7319683f20dd519a61a/purchases?key={}'.format(api_key)
+    response = requests.get(url)
+    print(response.json())
+
+get_purch()
