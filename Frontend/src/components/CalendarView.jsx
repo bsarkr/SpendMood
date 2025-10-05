@@ -36,7 +36,9 @@ function CalendarView({ entries, onBack, user, onLogout }) {
             <div className="calendar-header">
                 <button className="back-btn" onClick={onBack}>← Log Your Spending</button>
                 <div className="user-info-calendar">
-                    <span className="user-name">{user?.given_name || user?.name || user?.email}</span>
+                    <span className="user-name">
+                        {user?.username || user?.nickname || user?.given_name || user?.name?.split(' ')[0] || user?.email}
+                    </span>
                     <button className="auth-btn logout-btn" onClick={onLogout}>
                         Log Out
                     </button>

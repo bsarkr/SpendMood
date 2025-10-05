@@ -58,7 +58,7 @@ function InputPage({ onSubmit, hasEntries, onViewCalendar, isAuthenticated, user
                 {isAuthenticated ? (
                     <div className="user-info">
                         <span className="user-name">
-                            Welcome, {user?.given_name || user?.name?.split(' ')[0] || 'there'}
+                            Welcome, {user?.username || user?.nickname || user?.given_name || user?.name?.split(' ')[0] || 'there'}
                         </span>
                         <button className="auth-btn logout-btn" onClick={onLogout}>
                             Log Out
