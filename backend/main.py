@@ -10,6 +10,27 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from langgraph.graph import StateGraph, END
+# Import analyzer in a way that works when running the app from the repo root
+# (uvicorn backend.main:app) and when running from the backend folder
+# (uvicorn main:app). Try relative import first, then fallback to absolute and
+# finally load the module directly from the file path if necessary.
+try:
+    from .analysis.gemini import analyze_entry_with_gemini
+except Exception:
+    try:
+        from analysis.gemini import analyze_entry_with_gemini
+    except Exception:
+        # Last-resort: load the module directly from the file system so this
+        # file can be executed both as a package module and as a script.
+        import importlib.util
+        import sys
+
+        gemini_path = Path(__file__).parent / "analysis" / "gemini.py"
+        spec = importlib.util.spec_from_file_location("analysis.gemini", str(gemini_path))
+        gemini_mod = importlib.util.module_from_spec(spec)
+        sys.modules["analysis.gemini"] = gemini_mod
+        spec.loader.exec_module(gemini_mod)
+        analyze_entry_with_gemini = getattr(gemini_mod, "analyze_entry_with_gemini")
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -223,7 +244,8 @@ def should_analyze(state: GraphState) -> str:
         return "end"
 
 
-def _detect_mood_from_text(text: str) -> (str, int):
+def _detect_mood_from_text(text: str) -> Tuple[str, int]:
+    """Very small heuristic mood detector. Returns (label, rating 1-5)."""
     t = text.lower()
     if any(w in t for w in ["sad", "depressed", "tear", "unhappy", "down"]):
         return "sad", 1
@@ -278,44 +300,49 @@ app.add_middleware(
 
 @app.post("/api/log")
 def log_entry(payload: LogPayload):
-    ts = None
-    if payload.timestamp:
-        try:
-            ts = datetime.fromisoformat(payload.timestamp)
-        except Exception:
-            ts = datetime.now()
-    else:
-        ts = datetime.now()
+    """
+    Accepts a user log, analyzes it with Gemini, and stores the results.
+    """
+    # MODIFIED: Call the Gemini analyzer at the beginning
+    analysis = analyze_entry_with_gemini(payload.text)
+    
+    # 1. Parse timestamp
+    ts = datetime.fromisoformat(payload.timestamp) if payload.timestamp else datetime.now()
 
-    mood_label, mood_rating = _detect_mood_from_text(payload.text)
-    db["mood_logs"][ts.date()] = {"rating": mood_rating, "note": payload.text}
+    # 2. Store the mood log using the rating from the Gemini analysis
+    db["mood_logs"][ts.date()] = {"rating": analysis["mood_rating"], "note": payload.text}
     save_db(db)
+    
+    # 3. MODIFIED: Determine the final transaction amount.
+    # Prioritize the amount from the payload, but use the amount calculated by Gemini as a fallback.
+    final_amount = payload.amount if payload.amount is not None else analysis.get("calculated_amount")
 
+    # 4. Create a transaction if an amount exists
     created_tx = None
-    if payload.amount and payload.amount > 0:
+    if final_amount is not None and final_amount > 0:
         tx_id = f"tx_{uuid.uuid4().hex[:8]}"
+        
+        # MODIFIED: Use the 'item' from the Gemini analysis as the merchant name
         tx = {
             "id": tx_id,
-            "merchant": "manual-entry",
-            "amount": payload.amount,
+            "merchant": analysis.get("item") or "manual-entry",
+            "amount": final_amount,
             "timestamp": ts,
-            "status": "pending_review",
+            "status": "pending_review", # All manual entries now go to the review agent
         }
         db["transactions"][tx_id] = tx
         save_db(db)
         created_tx = tx
-
+        
+        # Run the review workflow automatically for this new transaction
         try:
             inputs = {"transaction_id": tx_id, "user_reason": payload.text}
-            result = app_graph.invoke(inputs)
-            if "intervention" in result and result["intervention"]:
-                db["pending_interventions"][tx_id] = result["intervention"]
-                db["transactions"][tx_id]["status"] = "awaiting_feedback"
-                save_db(db)
+            app_graph.invoke(inputs)
         except Exception as e:
-            print("Workflow invoke failed:", e)
+            print(f"Workflow invoke failed for manual entry: {e}")
 
-    return {"mood": {"label": mood_label, "rating": mood_rating}, "transaction": created_tx}
+    # 5. MODIFIED: Return the structured mood data from the Gemini analysis
+    return {"mood": {"label": analysis["mood_label"], "rating": analysis["mood_rating"]}, "transaction": created_tx}
 
 
 @app.post("/api/nessie/import/{account_id}")

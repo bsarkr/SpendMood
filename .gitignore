@@ -23,3 +23,11 @@ dist-ssr
 *.sln
 *.sw?
 *.env
+
+# Python virtualenvs
+.venv/
+venv/
+env/
+ENV/
+
+
