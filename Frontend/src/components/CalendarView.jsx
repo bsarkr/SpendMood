@@ -7,7 +7,8 @@ const API_BASE = 'http://localhost:8000/api';
 
 function CalendarView({ entries, onBack, user, onLogout }) {
     const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date()));
-    const [weeklyInsight, setWeeklyInsight] = useState('');
+    const [weeklyPatterns, setWeeklyPatterns] = useState({ patterns: [], summary: '' });
+    const [isLoadingPatterns, setIsLoadingPatterns] = useState(false);
     const [selectedEntry, setSelectedEntry] = useState(null);
     const [clickPosition, setClickPosition] = useState({ x: 0, y: 0 });
 
@@ -22,18 +23,57 @@ function CalendarView({ entries, onBack, user, onLogout }) {
         return entryDate >= currentWeekStart && entryDate < addDays(currentWeekStart, 7);
     });
 
+    // Fetch patterns from backend when week changes
     useEffect(() => {
-        if (weekEntries.length > 0) {
-            // Generate insight from weekly data
-            const totalSpent = weekEntries.reduce((sum, e) => sum + e.amount, 0);
-            const moodCounts = weekEntries.reduce((acc, e) => {
-                acc[e.mood] = (acc[e.mood] || 0) + 1;
-                return acc;
-            }, {});
-            const dominantMood = Object.keys(moodCounts).sort((a, b) => moodCounts[b] - moodCounts[a])[0];
-            setWeeklyInsight(`You spent $${totalSpent.toFixed(2)} this week. Your mood was mostly ${dominantMood}.`);
+        fetchWeeklyPatterns();
+    }, [currentWeekStart]);
+
+    const fetchWeeklyPatterns = async () => {
+        if (weekEntries.length === 0) {
+            setWeeklyPatterns({ patterns: [], summary: 'No data for this week.' });
+            return;
         }
-    }, [weekEntries]);
+
+        setIsLoadingPatterns(true);
+        try {
+            // Use the end of the week as the target date
+            const targetDate = addDays(currentWeekStart, 6).toISOString().split('T')[0];
+
+            const response = await fetch(`${API_BASE}/patterns/summary`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: user?.sub || 'default_user',
+                    date: targetDate
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setWeeklyPatterns(data);
+            } else {
+                // Fallback to simple calculation if backend fails
+                const totalSpent = weekEntries.reduce((sum, e) => sum + e.amount, 0);
+                const moodCounts = weekEntries.reduce((acc, e) => {
+                    acc[e.mood] = (acc[e.mood] || 0) + 1;
+                    return acc;
+                }, {});
+                const dominantMood = Object.keys(moodCounts).sort((a, b) => moodCounts[b] - moodCounts[a])[0];
+                setWeeklyPatterns({
+                    patterns: [],
+                    summary: `You spent $${totalSpent.toFixed(2)} this week. Your mood was mostly ${dominantMood}.`
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching weekly patterns:', error);
+            setWeeklyPatterns({
+                patterns: [],
+                summary: 'Unable to analyze patterns at this time.'
+            });
+        } finally {
+            setIsLoadingPatterns(false);
+        }
+    };
 
     const handleEntryClick = (entry, event) => {
         setClickPosition({ x: event.clientX, y: event.clientY });
@@ -41,7 +81,7 @@ function CalendarView({ entries, onBack, user, onLogout }) {
     };
 
     return (
-        <div className = 'content'>
+        <div className='content'>
             <div className="calendar-view">
                 <div className="calendar-header">
                     <button className="back-btn" onClick={onBack}>← Log Your Spending</button>
@@ -55,7 +95,12 @@ function CalendarView({ entries, onBack, user, onLogout }) {
                     </div>
                 </div>
 
-                <WeeklySummary entries={weekEntries} insight={weeklyInsight} />
+                <WeeklySummary
+                    entries={weekEntries}
+                    patterns={weeklyPatterns.patterns}
+                    summary={weeklyPatterns.summary}
+                    isLoading={isLoadingPatterns}
+                />
 
                 <div className="calendar-grid">
                     <div className="week-navigation">

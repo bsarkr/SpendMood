@@ -37,12 +37,92 @@
       "user_reason": "I'm unhappy that I payed $40 for a shirt",
       "mood_label": "sad",
       "mood_rating": 1
+    },
+    "nessie_68e1f0fa9683f20dd519a6b0": {
+      "id": "nessie_68e1f0fa9683f20dd519a6b0",
+      "merchant": "Shoes",
+      "amount": 56.85,
+      "timestamp": "2025-10-05T00:00:00",
+      "status": "reviewed",
+      "user_reason": "Bought Shoes for $56.85",
+      "mood_label": "Neutral",
+      "mood_rating": 3
+    },
+    "nessie_68e1f0fb9683f20dd519a6b1": {
+      "id": "nessie_68e1f0fb9683f20dd519a6b1",
+      "merchant": "Snack",
+      "amount": 88.87,
+      "timestamp": "2025-10-04T00:00:00",
+      "status": "reviewed",
+      "user_reason": "Bought Snack for $88.87",
+      "mood_label": "Neutral",
+      "mood_rating": 3
+    },
+    "nessie_68e1f0fc9683f20dd519a6b2": {
+      "id": "nessie_68e1f0fc9683f20dd519a6b2",
+      "merchant": "Headphones",
+      "amount": 36.39,
+      "timestamp": "2025-10-03T00:00:00",
+      "status": "reviewed",
+      "user_reason": "Bought Headphones for $36.39",
+      "mood_label": "Neutral",
+      "mood_rating": 3
+    },
+    "nessie_68e1f0fe9683f20dd519a6b3": {
+      "id": "nessie_68e1f0fe9683f20dd519a6b3",
+      "merchant": "Book",
+      "amount": 85.61,
+      "timestamp": "2025-10-02T00:00:00",
+      "status": "reviewed",
+      "user_reason": "Bought Book for $85.61",
+      "mood_label": "Neutral",
+      "mood_rating": 3
+    },
+    "nessie_68e1f0ff9683f20dd519a6b4": {
+      "id": "nessie_68e1f0ff9683f20dd519a6b4",
+      "merchant": "Notebook",
+      "amount": 38.36,
+      "timestamp": "2025-10-01T00:00:00",
+      "status": "reviewed",
+      "user_reason": "Bought Notebook for $38.36",
+      "mood_label": "Neutral",
+      "mood_rating": 3
+    },
+    "nessie_68e1f1009683f20dd519a6b5": {
+      "id": "nessie_68e1f1009683f20dd519a6b5",
+      "merchant": "Coffee",
+      "amount": 68.95,
+      "timestamp": "2025-09-30T00:00:00",
+      "status": "reviewed",
+      "user_reason": "Bought Coffee for $68.95",
+      "mood_label": "Neutral",
+      "mood_rating": 3
+    },
+    "nessie_68e1f1019683f20dd519a6b6": {
+      "id": "nessie_68e1f1019683f20dd519a6b6",
+      "merchant": "Notebook",
+      "amount": 69.83,
+      "timestamp": "2025-09-29T00:00:00",
+      "status": "reviewed",
+      "user_reason": "Bought Notebook for $69.83",
+      "mood_label": "Neutral",
+      "mood_rating": 3
+    },
+    "tx_a4175f6c": {
+      "id": "tx_a4175f6c",
+      "merchant": "manual-entry",
+      "amount": 15.0,
+      "timestamp": "2025-10-05T12:50:22.269000+00:00",
+      "status": "pending_review",
+      "user_reason": "I'm angry that I was charged $15 for a bagel",
+      "mood_label": "angry",
+      "mood_rating": 1
     }
   },
   "mood_logs": {
     "2025-10-05": {
       "rating": 1,
-      "note": "I'm unhappy that I payed $40 for a shirt"
+      "note": "I'm angry that I was charged $15 for a bagel"
     }
   },
   "pending_interventions": {}
