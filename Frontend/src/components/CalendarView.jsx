@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import WeeklySummary from './WeeklySummary';
 import PurchaseDetailModal from './PurchaseDetailModal';
 
+const API_BASE = 'http://localhost:8000/api';
+
 function CalendarView({ entries, onBack, user, onLogout }) {
     const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date()));
     const [weeklyInsight, setWeeklyInsight] = useState('');
@@ -22,7 +24,14 @@ function CalendarView({ entries, onBack, user, onLogout }) {
 
     useEffect(() => {
         if (weekEntries.length > 0) {
-            generateWeeklyInsight(weekEntries).then(setWeeklyInsight);
+            // Generate insight from weekly data
+            const totalSpent = weekEntries.reduce((sum, e) => sum + e.amount, 0);
+            const moodCounts = weekEntries.reduce((acc, e) => {
+                acc[e.mood] = (acc[e.mood] || 0) + 1;
+                return acc;
+            }, {});
+            const dominantMood = Object.keys(moodCounts).sort((a, b) => moodCounts[b] - moodCounts[a])[0];
+            setWeeklyInsight(`You spent $${totalSpent.toFixed(2)} this week. Your mood was mostly ${dominantMood}.`);
         }
     }, [weekEntries]);
 
@@ -107,12 +116,6 @@ function CalendarView({ entries, onBack, user, onLogout }) {
             )}
         </div>
     );
-}
-
-async function generateWeeklyInsight(entries) {
-    const totalSpent = entries.reduce((sum, e) => sum + e.amount, 0);
-    const avgMood = entries.length > 0 ? 'mixed' : 'neutral';
-    return `You spent $${totalSpent.toFixed(2)} this week. Your mood was ${avgMood}.`;
 }
 
 export default CalendarView;
