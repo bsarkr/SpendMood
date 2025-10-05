@@ -65,6 +65,18 @@ function App() {
     }, 300);
   };
 
+  const handleViewCalendar = () => {
+    if (!isAuthenticated) {
+      loginWithRedirect();
+    } else {
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setView('calendar');
+        setIsTransitioning(false);
+      }, 300);
+    }
+  };
+
   if (isLoading) {
     return <div className="loading">Loading...</div>;
   }
@@ -75,13 +87,7 @@ function App() {
         <InputPage
           onSubmit={handleEntrySubmit}
           hasEntries={entries.length > 0}
-          onViewCalendar={() => {
-            if (!isAuthenticated) {
-              loginWithRedirect();
-            } else {
-              setView('calendar');
-            }
-          }}
+          onViewCalendar={handleViewCalendar}
           isAuthenticated={isAuthenticated}
           user={user}
           onLogin={loginWithRedirect}
@@ -102,4 +108,3 @@ function App() {
 }
 
 export default App;
-

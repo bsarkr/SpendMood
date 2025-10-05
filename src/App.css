@@ -761,3 +761,11 @@ body {
     transform: translateY(-50%);
   }
 }
+
+.content{
+  display: flex;
+  width: 100vw;
+  justify-content: center;
+  align-items: center;
+  align-content: center;
+}
