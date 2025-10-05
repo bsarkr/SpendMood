@@ -1,0 +1,66 @@
+{
+  "user": {
+    "id": "alex",
+    "name": "Alex",
+    "goal": "Stop stress shopping and save $500/month",
+    "known_trigger": "Bad work days lead to online shopping",
+    "memory": [],
+    "avoided_spending": 0.0
+  },
+  "transactions": {
+    "tx_day1_1": {
+      "id": "tx_day1_1",
+      "merchant": "Groceries",
+      "amount": 45.0,
+      "timestamp": "2025-10-04T18:00:00",
+      "status": "reviewed"
+    },
+    "tx_day1_2": {
+      "id": "tx_day1_2",
+      "merchant": "Coffee",
+      "amount": 12.0,
+      "timestamp": "2025-10-04T09:00:00",
+      "status": "reviewed"
+    },
+    "tx_day2_1": {
+      "id": "tx_day2_1",
+      "merchant": "Amazon",
+      "amount": 120.0,
+      "timestamp": "2025-10-05T22:00:00",
+      "status": "awaiting_feedback"
+    },
+    "tx_2e058278": {
+      "id": "tx_2e058278",
+      "merchant": "manual-entry",
+      "amount": 25.5,
+      "timestamp": "2025-10-04T21:38:40.318098",
+      "status": "pending_review"
+    },
+    "tx_ac9ebfc8": {
+      "id": "tx_ac9ebfc8",
+      "merchant": "manual-entry",
+      "amount": 18.0,
+      "timestamp": "2025-10-04T21:39:09.392036",
+      "status": "pending_review"
+    }
+  },
+  "mood_logs": {
+    "2025-10-04": {
+      "rating": 3,
+      "note": "Lunch with a friend"
+    },
+    "2025-10-05": {
+      "rating": 2,
+      "note": "Rough day at work"
+    }
+  },
+  "pending_interventions": {
+    "tx_day2_1": {
+      "message": "Last time you were stressed, a walk helped. This purchase is 40% of your weekly discretionary budget. Want to sleep on it and decide tomorrow?",
+      "options": [
+        "accept_delay",
+        "reject_suggestion"
+      ]
+    }
+  }
+}
