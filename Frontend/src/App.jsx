@@ -1,3 +1,5 @@
+// src/App.jsx
+
 import { useState, useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import InputPage from './components/InputPage';
@@ -13,7 +15,6 @@ function App() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [pendingInput, setPendingInput] = useState('');
 
-  // Load entries from backend when authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
       fetchEntriesFromBackend();
@@ -25,15 +26,16 @@ function App() {
       const response = await fetch(`${API_BASE}/mockdb`);
       const data = await response.json();
 
-      // Convert backend transactions to frontend format
-      const backendEntries = Object.values(data.transactions).map(tx => ({
-        timestamp: tx.timestamp,
-        mood: 'Neutral', // Default, could enhance this
-        amount: tx.amount,
-        item: tx.merchant,
-        reason: `Purchased from ${tx.merchant}`,
-        category: 'Shopping'
-      }));
+      const backendEntries = Object.values(data.transactions).map(tx => {
+        return {
+          timestamp: tx.timestamp,
+          mood: tx.mood_label || 'Neutral',
+          amount: tx.amount,
+          item: tx.merchant,
+          reason: tx.user_reason || `Purchased from ${tx.merchant}`,
+          category: 'Shopping'
+        };
+      });
 
       setEntries(backendEntries);
     } catch (error) {
@@ -56,9 +58,9 @@ function App() {
       return;
     }
 
-    setIsTransitioning(true);
-    setEntries(prev => [...prev, parsedData]);
+    await fetchEntriesFromBackend();
 
+    setIsTransitioning(true);
     setTimeout(() => {
       setView('calendar');
       setIsTransitioning(false);
@@ -73,11 +75,11 @@ function App() {
     }, 300);
   };
 
-  const handleViewCalendar = () => {
+  const handleViewCalendar = async () => {
     if (!isAuthenticated) {
       loginWithRedirect();
     } else {
-      fetchEntriesFromBackend(); // Refresh before viewing
+      await fetchEntriesFromBackend();
       setIsTransitioning(true);
       setTimeout(() => {
         setView('calendar');

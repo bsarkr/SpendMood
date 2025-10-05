@@ -1,3 +1,5 @@
+# backend/main.py
+
 import json
 import uuid
 import requests
@@ -10,35 +12,28 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from langgraph.graph import StateGraph, END
-# Import analyzer in a way that works when running the app from the repo root
-# (uvicorn backend.main:app) and when running from the backend folder
-# (uvicorn main:app). Try relative import first, then fallback to absolute and
-# finally load the module directly from the file path if necessary.
 try:
     from .analysis.gemini import analyze_entry_with_gemini
 except Exception:
     try:
         from analysis.gemini import analyze_entry_with_gemini
     except Exception:
-        # Last-resort: load the module directly from the file system so this
-        # file can be executed both as a package module and as a script.
         import importlib.util
         import sys
 
         gemini_path = Path(__file__).parent / "analysis" / "gemini.py"
-        spec = importlib.util.spec_from_file_location("analysis.gemini", str(gemini_path))
+        spec = importlib.util.spec_from_file_location(
+            "analysis.gemini", str(gemini_path))
         gemini_mod = importlib.util.module_from_spec(spec)
         sys.modules["analysis.gemini"] = gemini_mod
         spec.loader.exec_module(gemini_mod)
-        analyze_entry_with_gemini = getattr(gemini_mod, "analyze_entry_with_gemini")
+        analyze_entry_with_gemini = getattr(
+            gemini_mod, "analyze_entry_with_gemini")
 from dotenv import load_dotenv
 
-# Load environment variables
 load_dotenv()
 NESSIE_API_KEY = os.getenv("SECRET_NESSIE")
 NESSIE_BASE_URL = "http://api.nessieisreal.com"
-
-# Pydantic models
 
 
 class ReviewPayload(BaseModel):
@@ -55,7 +50,6 @@ class LogPayload(BaseModel):
     timestamp: Optional[str] = None
 
 
-# Mock Database
 DB_PATH = Path(__file__).parent / "mock_db.json"
 
 
@@ -155,8 +149,6 @@ def save_db(db: dict):
 
 db = load_db()
 
-# LangGraph State
-
 
 class GraphState(TypedDict):
     transaction_id: str
@@ -186,8 +178,6 @@ def update_memory_in_db(summary: str):
     if "success" in summary.lower():
         db["user"]["avoided_spending"] += 120.00
     save_db(db)
-
-# LangGraph Agents
 
 
 def triage_agent(state: GraphState) -> GraphState:
@@ -245,7 +235,6 @@ def should_analyze(state: GraphState) -> str:
 
 
 def _detect_mood_from_text(text: str) -> Tuple[str, int]:
-    """Very small heuristic mood detector. Returns (label, rating 1-5)."""
     t = text.lower()
     if any(w in t for w in ["sad", "depressed", "tear", "unhappy", "down"]):
         return "sad", 1
@@ -258,7 +247,6 @@ def _detect_mood_from_text(text: str) -> Tuple[str, int]:
     return "neutral", 3
 
 
-# LangGraph workflow
 workflow = StateGraph(GraphState)
 workflow.add_node("triage", triage_agent)
 workflow.add_node("analyze", analysis_agent)
@@ -270,8 +258,6 @@ workflow.add_conditional_edges("triage", should_analyze, {
 workflow.add_edge("analyze", "intervene")
 workflow.add_edge("update_memory", END)
 app_graph = workflow.compile()
-
-# Nessie API Integration
 
 
 def fetch_nessie_purchases(account_id: str) -> list:
@@ -288,7 +274,6 @@ def fetch_nessie_purchases(account_id: str) -> list:
         return []
 
 
-# FastAPI Application
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -300,48 +285,42 @@ app.add_middleware(
 
 @app.post("/api/log")
 def log_entry(payload: LogPayload):
-    """
-    Accepts a user log, analyzes it with Gemini, and stores the results.
-    """
-    # MODIFIED: Call the Gemini analyzer at the beginning
     analysis = analyze_entry_with_gemini(payload.text)
-    
-    # 1. Parse timestamp
-    ts = datetime.fromisoformat(payload.timestamp) if payload.timestamp else datetime.now()
 
-    # 2. Store the mood log using the rating from the Gemini analysis
-    db["mood_logs"][ts.date()] = {"rating": analysis["mood_rating"], "note": payload.text}
+    ts = datetime.fromisoformat(
+        payload.timestamp) if payload.timestamp else datetime.now()
+
+    db["mood_logs"][ts.date()] = {
+        "rating": analysis["mood_rating"], "note": payload.text}
     save_db(db)
-    
-    # 3. MODIFIED: Determine the final transaction amount.
-    # Prioritize the amount from the payload, but use the amount calculated by Gemini as a fallback.
-    final_amount = payload.amount if payload.amount is not None else analysis.get("calculated_amount")
 
-    # 4. Create a transaction if an amount exists
+    final_amount = payload.amount if payload.amount is not None else analysis.get(
+        "calculated_amount")
+
     created_tx = None
     if final_amount is not None and final_amount > 0:
         tx_id = f"tx_{uuid.uuid4().hex[:8]}"
-        
-        # MODIFIED: Use the 'item' from the Gemini analysis as the merchant name
+
         tx = {
             "id": tx_id,
             "merchant": analysis.get("item") or "manual-entry",
             "amount": final_amount,
             "timestamp": ts,
-            "status": "pending_review", # All manual entries now go to the review agent
+            "status": "pending_review",
+            "user_reason": payload.text,
+            "mood_label": analysis["mood_label"],
+            "mood_rating": analysis["mood_rating"],
         }
         db["transactions"][tx_id] = tx
         save_db(db)
         created_tx = tx
-        
-        # Run the review workflow automatically for this new transaction
+
         try:
             inputs = {"transaction_id": tx_id, "user_reason": payload.text}
             app_graph.invoke(inputs)
         except Exception as e:
             print(f"Workflow invoke failed for manual entry: {e}")
 
-    # 5. MODIFIED: Return the structured mood data from the Gemini analysis
     return {"mood": {"label": analysis["mood_label"], "rating": analysis["mood_rating"]}, "transaction": created_tx}
 
 
@@ -367,19 +346,23 @@ def import_nessie_purchases(account_id: str):
         except:
             purchase_date = datetime.now()
 
+        user_reason = f"Bought {purchase['description']} for ${purchase['amount']}"
+
         tx = {
             "id": tx_id,
             "merchant": purchase.get("description", "Unknown"),
             "amount": purchase.get("amount", 0),
             "timestamp": purchase_date,
             "status": "pending_review",
+            "user_reason": user_reason,
+            "mood_label": "Neutral",
+            "mood_rating": 3,
         }
 
         db["transactions"][tx_id] = tx
         imported_count += 1
 
         try:
-            user_reason = f"Bought {purchase['description']} for ${purchase['amount']}"
             inputs = {"transaction_id": tx_id, "user_reason": user_reason}
             result = app_graph.invoke(inputs)
 

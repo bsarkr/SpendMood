@@ -8,115 +8,42 @@
     "avoided_spending": 0.0
   },
   "transactions": {
-    "tx_day1_1": {
-      "id": "tx_day1_1",
-      "merchant": "Groceries",
-      "amount": 45.0,
-      "timestamp": "2025-10-04T18:00:00",
-      "status": "reviewed"
-    },
-    "tx_day1_2": {
-      "id": "tx_day1_2",
-      "merchant": "Coffee",
-      "amount": 12.0,
-      "timestamp": "2025-10-04T09:00:00",
-      "status": "reviewed"
-    },
-    "tx_day2_1": {
-      "id": "tx_day2_1",
-      "merchant": "Amazon",
-      "amount": 120.0,
-      "timestamp": "2025-10-05T22:00:00",
-      "status": "awaiting_feedback"
-    },
-    "tx_2e058278": {
-      "id": "tx_2e058278",
+    "tx_98ea9c2a": {
+      "id": "tx_98ea9c2a",
       "merchant": "manual-entry",
-      "amount": 25.5,
-      "timestamp": "2025-10-04T21:38:40.318098",
-      "status": "pending_review"
+      "amount": 20.0,
+      "timestamp": "2025-10-05T07:46:13.937000+00:00",
+      "status": "pending_review",
+      "user_reason": "I'm glad I bought ramen for $20",
+      "mood_label": "happy",
+      "mood_rating": 5
     },
-    "tx_ac9ebfc8": {
-      "id": "tx_ac9ebfc8",
+    "tx_14918e14": {
+      "id": "tx_14918e14",
       "merchant": "manual-entry",
-      "amount": 18.0,
-      "timestamp": "2025-10-04T21:39:09.392036",
-      "status": "pending_review"
+      "amount": 70.0,
+      "timestamp": "2025-10-05T07:46:52.137000+00:00",
+      "status": "pending_review",
+      "user_reason": "I dont feel great that I spend $70 on a cookie!",
+      "mood_label": "happy",
+      "mood_rating": 5
     },
-    "tx_55b5516b": {
-      "id": "tx_55b5516b",
+    "tx_e14d2fa6": {
+      "id": "tx_e14d2fa6",
       "merchant": "manual-entry",
-      "amount": 17.0,
-      "timestamp": "2025-10-05T02:30:49.096000+00:00",
-      "status": "pending_review"
-    },
-    "nessie_68e1f0fa9683f20dd519a6b0": {
-      "id": "nessie_68e1f0fa9683f20dd519a6b0",
-      "merchant": "Shoes",
-      "amount": 56.85,
-      "timestamp": "2025-10-05T00:00:00",
-      "status": "reviewed"
-    },
-    "nessie_68e1f0fb9683f20dd519a6b1": {
-      "id": "nessie_68e1f0fb9683f20dd519a6b1",
-      "merchant": "Snack",
-      "amount": 88.87,
-      "timestamp": "2025-10-04T00:00:00",
-      "status": "reviewed"
-    },
-    "nessie_68e1f0fc9683f20dd519a6b2": {
-      "id": "nessie_68e1f0fc9683f20dd519a6b2",
-      "merchant": "Headphones",
-      "amount": 36.39,
-      "timestamp": "2025-10-03T00:00:00",
-      "status": "reviewed"
-    },
-    "nessie_68e1f0fe9683f20dd519a6b3": {
-      "id": "nessie_68e1f0fe9683f20dd519a6b3",
-      "merchant": "Book",
-      "amount": 85.61,
-      "timestamp": "2025-10-02T00:00:00",
-      "status": "reviewed"
-    },
-    "nessie_68e1f0ff9683f20dd519a6b4": {
-      "id": "nessie_68e1f0ff9683f20dd519a6b4",
-      "merchant": "Notebook",
-      "amount": 38.36,
-      "timestamp": "2025-10-01T00:00:00",
-      "status": "reviewed"
-    },
-    "nessie_68e1f1009683f20dd519a6b5": {
-      "id": "nessie_68e1f1009683f20dd519a6b5",
-      "merchant": "Coffee",
-      "amount": 68.95,
-      "timestamp": "2025-09-30T00:00:00",
-      "status": "reviewed"
-    },
-    "nessie_68e1f1019683f20dd519a6b6": {
-      "id": "nessie_68e1f1019683f20dd519a6b6",
-      "merchant": "Notebook",
-      "amount": 69.83,
-      "timestamp": "2025-09-29T00:00:00",
-      "status": "reviewed"
+      "amount": 40.0,
+      "timestamp": "2025-10-05T07:47:35.792000+00:00",
+      "status": "pending_review",
+      "user_reason": "I'm unhappy that I payed $40 for a shirt",
+      "mood_label": "sad",
+      "mood_rating": 1
     }
   },
   "mood_logs": {
-    "2025-10-04": {
-      "rating": 3,
-      "note": "Lunch with a friend"
-    },
     "2025-10-05": {
-      "rating": 3,
-      "note": "Feeling stressed after work. Bought a $45 shirt from H&M at 9pm to feel better"
+      "rating": 1,
+      "note": "I'm unhappy that I payed $40 for a shirt"
     }
   },
-  "pending_interventions": {
-    "tx_day2_1": {
-      "message": "Last time you were stressed, a walk helped. This purchase is 40% of your weekly discretionary budget. Want to sleep on it and decide tomorrow?",
-      "options": [
-        "accept_delay",
-        "reject_suggestion"
-      ]
-    }
-  }
+  "pending_interventions": {}
 }
